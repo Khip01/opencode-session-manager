@@ -1,9 +1,16 @@
 package tui
 
 import (
-	"fmt"
+	"context"
+	"database/sql"
+	"errors"
+
+	"github.com/Khip01/opencode-session-manager/internal/db"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/viewport"
 	"charm.land/lipgloss/v2"
 )
 
@@ -12,68 +19,196 @@ type Options struct {
 	Version string
 }
 
-type tickMsg struct{}
+type tabID int
+
+const (
+	tabOrphans tabID = iota
+	tabActive
+)
+
+func (t tabID) Label() string {
+	switch t {
+	case tabOrphans:
+		return "Orphans"
+	case tabActive:
+		return "Active"
+	default:
+		return "Unknown"
+	}
+}
+
+type sessionsLoadedMsg struct {
+	orphans []sessionItem
+	active  []sessionItem
+	err     error
+}
 
 type model struct {
 	options Options
 	styles  styles
-	ready   bool
+	keys    keyMap
+
+	db     *sql.DB
+	loader *dataLoader
+
+	tab tabID
+
+	orphans []sessionItem
+	active  []sessionItem
+
+	list   list.Model
+	detail viewport.Model
+	help   help.Model
+
+	width    int
+	height   int
+	ready    bool
+	loading  bool
+	quitting bool
+	err      error
+	status   string
 }
 
-func newModel(opts Options) model {
+func newModel(opts Options, handle *sql.DB) model {
+	km := defaultKeyMap()
+	l := newList(nil, 40, 20)
+	d := newDetail(40, 20)
+	h := help.New()
+
 	return model{
 		options: opts,
 		styles:  defaultStyles(),
+		keys:    km,
+		db:      handle,
+		loader:  newDataLoader(handle),
+		tab:     tabOrphans,
+		list:    l,
+		detail:  d,
+		help:    h,
+		loading: true,
+		status:  "loading…",
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return loadSessionsCmd(m.loader)
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.ready = true
-		return m, nil
-	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "q", "ctrl+c", "esc":
-			return m, tea.Quit
-		}
+func loadSessionsCmd(loader *dataLoader) tea.Cmd {
+	return func() tea.Msg {
+		ctx := context.Background()
+		orphans, active, err := loader.Load(ctx)
+		return sessionsLoadedMsg{orphans: orphans, active: active, err: err}
 	}
-	return m, nil
 }
 
 func (m model) View() tea.View {
-	if !m.ready {
-		return tea.NewView("")
+	if m.quitting {
+		return tea.NewView("Bye!")
 	}
 
-	header := m.styles.header.Render(
-		fmt.Sprintf("opencode-sm %s", m.options.Version),
-	)
-	dbInfo := m.styles.subtle.Render(fmt.Sprintf("DB: %s", m.options.DBPath))
+	if !m.ready {
+		return tea.NewView(m.styles.subtle.Render("starting…"))
+	}
 
-	body := m.styles.body.Render(
-		fmt.Sprintf(
-			"%s\n%s\n\n%s\n\n%s",
-			header,
-			dbInfo,
-			m.styles.welcome.Render("Welcome. Session browser is coming in Milestone 2."),
-			m.styles.footer.Render("Press q to quit"),
-		),
-	)
+	header := m.renderHeader()
+	tabs := m.renderTabs()
+	body := m.renderBody()
+	footer := m.renderFooter()
 
-	v := tea.NewView(body)
+	content := lipgloss.JoinVertical(lipgloss.Left, header, tabs, body, footer)
+
+	v := tea.NewView(content)
 	v.AltScreen = true
 	return v
 }
 
-func Run(opts Options) error {
-	p := tea.NewProgram(newModel(opts))
-	_, err := p.Run()
-	return err
+func (m model) renderHeader() string {
+	left := m.styles.header.Render(" opencode-sm " + m.options.Version + " ")
+	right := m.styles.subtle.Render("DB: " + m.options.DBPath)
+	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 }
 
-var _ = lipgloss.NewStyle
+func (m model) renderTabs() string {
+	tabs := []tabID{tabOrphans, tabActive}
+	parts := make([]string, len(tabs))
+	for i, t := range tabs {
+		label := t.Label()
+		switch t {
+		case tabOrphans:
+			label += " (" + itoa(len(m.orphans)) + ")"
+		case tabActive:
+			label += " (" + itoa(len(m.active)) + ")"
+		}
+		if t == m.tab {
+			parts[i] = m.styles.tabActive.Render(" " + label + " ")
+		} else {
+			parts[i] = m.styles.tabInactive.Render(" " + label + " ")
+		}
+	}
+	return lipgloss.JoinHorizontal(lipgloss.Top, parts...)
+}
+
+func (m model) renderBody() string {
+	listWidth := m.width / 3
+	if listWidth < 28 {
+		listWidth = 28
+	}
+	detailWidth := m.width - listWidth - 4
+	if detailWidth < 28 {
+		detailWidth = 28
+	}
+	bodyHeight := m.height - 6
+	if bodyHeight < 6 {
+		bodyHeight = 6
+	}
+
+	m.list.SetWidth(listWidth)
+	m.list.SetHeight(bodyHeight)
+	m.detail.SetWidth(detailWidth)
+	m.detail.SetHeight(bodyHeight)
+
+	left := m.styles.listPanel.
+		Width(listWidth).
+		Height(bodyHeight).
+		Render(m.list.View())
+
+	right := m.styles.detailPanel.
+		Width(detailWidth).
+		Height(bodyHeight).
+		Render(m.detail.View())
+
+	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+}
+
+func (m model) renderFooter() string {
+	status := m.status
+	if status == "" {
+		status = m.styles.subtle.Render("ready")
+	}
+	helpView := m.help.ShortHelpView(m.keys.ShortHelp())
+	bar := m.styles.helpBar.Width(m.width).Render(helpView)
+	return status + "\n" + bar
+}
+
+func (m *model) recomputeLayout() {
+	if m.width == 0 || m.height == 0 {
+		return
+	}
+	m.ready = true
+}
+
+func Run(opts Options) error {
+	handle, err := db.Open(opts.DBPath)
+	if err != nil {
+		return err
+	}
+	defer handle.Close()
+
+	p := tea.NewProgram(newModel(opts, handle))
+	_, err = p.Run()
+	if err != nil && !errors.Is(err, tea.ErrProgramKilled) {
+		return err
+	}
+	return nil
+}
