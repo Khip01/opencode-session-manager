@@ -1,6 +1,6 @@
 module github.com/Khip01/opencode-session-manager
 
-go 1.26.2
+go 1.25.0
 
 require (
 	charm.land/bubbles/v2 v2.1.0
