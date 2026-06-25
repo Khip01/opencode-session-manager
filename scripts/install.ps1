@@ -54,9 +54,19 @@ function Die($msg) { Err $msg; exit 1 }
 
 function Resolve-LatestVersion {
     try {
-        $release = Invoke-RestMethod -Uri "$GitHubApi/repos/$Repo/releases/latest" -ErrorAction Stop
-        if (-not $release.tag_name) { throw "no tag_name in response" }
-        return $release.tag_name
+        # /releases (plural) returns ALL non-draft releases including
+        # pre-releases, sorted by created_at desc. We pick the first.
+        # Note: /releases/latest ignores pre-releases and returns 404
+        # when only alpha or beta tags exist, which broke install
+        # for users on a repository that has not yet cut a stable
+        # release.
+        $releases = Invoke-RestMethod -Uri "$GitHubApi/repos/$Repo/releases?per_page=20" -ErrorAction Stop
+        if (-not $releases -or $releases.Count -eq 0) {
+            throw "no releases found"
+        }
+        $latest = $releases[0].tag_name
+        if (-not $latest) { throw "first release has no tag_name" }
+        return $latest
     } catch {
         Die "could not determine latest version from GitHub: $_"
     }

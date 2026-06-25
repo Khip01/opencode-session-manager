@@ -31,6 +31,11 @@ OPTIONS:
   -DryRun                Show what would be removed without removing
   -Help                  Show this help
 
+BEHAVIOR:
+  If the opencode-sm binary is on PATH, this script delegates to
+  'opencode-sm uninstall' for a single source of truth. Otherwise it
+  falls back to a local cleanup that scans standard install locations.
+
 REMOVED FILES:
   - The opencode-sm binary from the install location
   - (with -Purge) %LOCALAPPDATA%\opencode-sm\ if present
@@ -48,7 +53,19 @@ function Err($msg)  { Write-Host "error: $msg" -ForegroundColor Red }
 
 if ($Help) { Show-Help; exit 0 }
 
-Log "opencode-sm uninstaller (Windows)"
+# If the opencode-sm binary is on PATH, delegate to its built-in
+# uninstall subcommand. This avoids re-implementing the logic in
+# PowerShell and keeps a single source of truth.
+if (-not $DryRun -and (Get-Command "opencode-sm" -ErrorAction SilentlyContinue)) {
+    $delegateArgs = @("uninstall")
+    if ($Prefix) { $delegateArgs += @("--prefix", $Prefix) }
+    if ($Purge)  { $delegateArgs += @("--purge") }
+    Log "delegating to opencode-sm $($delegateArgs -join ' ')"
+    & opencode-sm @delegateArgs
+    exit $LASTEXITCODE
+}
+
+Log "opencode-sm uninstaller (Windows, script fallback)"
 Log ""
 
 if ($DryRun) {
@@ -130,11 +147,12 @@ if ($Prefix) {
 
 if ($Purge) { Purge-Config }
 
-    if (-not $DryRun) {
+if (-not $DryRun) {
         Log ""
-        Log "uninstall complete"
+        Log "uninstall complete (script fallback)"
         Log ""
         Log "Note: this script does not touch:"
         Log "  - Backups (*.opencode-sm-backup) in the same dir as opencode.db"
         Log "  - opencode.db or any OpenCode data"
     }
+}

@@ -86,11 +86,21 @@ capitalize() {
 }
 
 resolve_latest_version() {
+    local json
+    if ! json=$(curl -fsSL "$GITHUB_API/repos/$REPO/releases?per_page=20"); then
+        die "could not fetch releases from GitHub"
+    fi
+
+    # /releases (plural) returns ALL non-draft releases including
+    # pre-releases, sorted by created_at desc. We pick the first
+    # tag_name. Note: /releases/latest ignores pre-releases which
+    # is why we cannot use it for alpha/beta tags.
     local tag
-    tag=$(curl -fsSL "$GITHUB_API/repos/$REPO/releases/latest" \
+    tag=$(printf '%s' "$json" \
         | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
         | head -1)
-    [[ -n "$tag" ]] || die "could not determine latest version from GitHub"
+
+    [[ -n "$tag" ]] || die "could not determine latest version from GitHub (no releases found)"
     printf '%s\n' "$tag"
 }
 

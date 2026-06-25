@@ -30,6 +30,11 @@ OPTIONS:
   --dry-run             Show what would be removed without removing
   -h, --help            Show this help
 
+BEHAVIOR:
+  If the opencode-sm binary is on PATH, this script delegates to
+  'opencode-sm uninstall' for a single source of truth. Otherwise it
+  falls back to a local cleanup that scans standard install locations.
+
 REMOVED FILES:
   - The opencode-sm binary from the install location
   - (with --purge) ~/.config/opencode-sm/ if present
@@ -146,7 +151,19 @@ purge_config() {
 main() {
     parse_args "$@"
 
-    log "opencode-sm uninstaller"
+    # If the opencode-sm binary is available on PATH, delegate to its
+    # built-in uninstall subcommand. This avoids re-implementing the
+    # logic in shell and keeps a single source of truth. The binary
+    # subcommand supports the same --prefix, --purge, --dry-run flags.
+    if [[ "$DRY_RUN" != true ]] && command -v opencode-sm >/dev/null 2>&1; then
+        local args=()
+        [[ -n "$PREFIX" ]] && args+=("--prefix" "$PREFIX")
+        [[ "$PURGE" == true ]] && args+=("--purge")
+        log "delegating to opencode-sm uninstall ${args[*]:-}"
+        exec opencode-sm uninstall "${args[@]}"
+    fi
+
+    log "opencode-sm uninstaller (script fallback)"
     log ""
 
     if [[ "$DRY_RUN" == true ]]; then
@@ -166,7 +183,7 @@ main() {
 
     if [[ "$DRY_RUN" != true ]]; then
         log ""
-        log "uninstall complete"
+        log "uninstall complete (script fallback)"
         log ""
         log "Note: this script does not touch:"
         log "  - Backups (*.opencode-sm-backup) in the same dir as opencode.db"

@@ -182,6 +182,31 @@ Workflow for new functionality:
 - Color palette is in `internal/tui/styles.go` as `opencodePalette()`.
   Extend there rather than hard-coding colors in views.
 
+## Uninstall pattern (hybrid)
+
+We support two equivalent ways to uninstall. Pick whichever fits
+the user workflow:
+
+1. `opencode-sm uninstall` subcommand (recommended for end users)
+   - Already on PATH, no network, no extra downloads
+   - Binary is trusted by AV/Gatekeeper (already installed)
+   - Supports `--prefix DIR`, `--purge`, `--dry-run` flags
+   - Subcommand dispatch in `cmd/opencode-sm/main.go` rewrites
+     argv so both `opencode-sm uninstall` and `opencode-sm --uninstall` work
+   - Logic lives in `cmd/opencode-sm/uninstall.go` with unit tests
+     in `uninstall_test.go`
+2. `scripts/uninstall.sh` and `scripts/uninstall.ps1` (fallback)
+   - For when binary is missing, broken, or installed off PATH
+   - Bash script checks `command -v opencode-sm` and `exec`s to the
+     subcommand if found, so behavior stays identical to Option 1
+   - PowerShell script uses `Get-Command` to detect and delegate
+   - Falls back to local scan if binary not found
+
+When modifying uninstall behavior:
+- Change the logic once in `cmd/opencode-sm/uninstall.go`
+- The scripts will pick up the new behavior via delegation
+- Update unit tests in `cmd/opencode-sm/uninstall_test.go`
+
 ## Commit format
 
 Conventional Commits. Use `Feat:`, `Fix:`, `Chore:` section

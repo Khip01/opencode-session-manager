@@ -110,6 +110,28 @@ make install PREFIX=$HOME/.local/bin   # installs to ~/.local/bin/opencode-sm
 
 ### Uninstallation
 
+Two equivalent ways. Pick whichever is more convenient.
+
+**Option 1: `opencode-sm uninstall` subcommand (recommended)**
+
+The installed binary can uninstall itself. No network, no extra
+downloads, no AV/smart-screen prompts on Windows because the binary
+is already installed and trusted.
+
+```sh
+opencode-sm uninstall                       # remove from standard locations
+opencode-sm uninstall --prefix ~/.local/bin # remove from specific dir
+opencode-sm uninstall --purge               # also remove ~/.config/opencode-sm/
+opencode-sm uninstall --dry-run             # preview without removing
+```
+
+Works on Linux, macOS, and Windows (as `opencode-sm.exe uninstall`).
+
+**Option 2: Downloadable uninstall script (fallback)**
+
+Use this when the binary is missing, broken, or installed in a
+location not on PATH.
+
 **Linux / macOS:**
 
 ```sh
@@ -119,12 +141,18 @@ curl -fsSL https://raw.githubusercontent.com/Khip01/opencode-session-manager/mai
 # add --dry-run to preview without removing
 ```
 
+If the `opencode-sm` binary is on PATH, the script delegates to
+`opencode-sm uninstall` (Option 1) so behavior stays identical. If
+not, the script does its own scan of standard locations.
+
 **Windows (PowerShell):**
 
 ```powershell
 irm https://raw.githubusercontent.com/Khip01/opencode-session-manager/main/scripts/uninstall.ps1 | iex
 # or: powershell -File scripts/uninstall.ps1
 ```
+
+Same delegation behavior as the bash version.
 
 ### Shell Completions
 
@@ -145,10 +173,14 @@ opencode-sm --db-path /path/to/db    # Use a specific opencode.db
 opencode-sm --watch                  # Auto-refresh when opencode.db changes
 opencode-sm --version                # Print version
 opencode-sm --help                   # Print help
+opencode-sm uninstall                # Remove the binary from standard locations
+opencode-sm uninstall --dry-run      # Preview what uninstall would do
+opencode-sm uninstall --purge        # Also remove ~/.config/opencode-sm/
+opencode-sm uninstall --prefix DIR   # Remove binary from a specific directory
 ```
 
 The TUI launches in alt-screen mode. Press `?` for the full keybinding cheatsheet
-or `q` to quit.
+or `q` to quit. For uninstall, see [Uninstallation](#uninstallation) below.
 
 ## Keybindings
 
