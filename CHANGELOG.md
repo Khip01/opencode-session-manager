@@ -7,6 +7,21 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3] - 2026-06-26
+
+### Fixed
+- Install scripts (`install.sh` and `install.ps1`) now check
+  **writable** directories before selecting an install location.
+  Previously they picked the first PATH directory, which on Linux
+  and macOS is `/usr/local/bin`. That directory requires `sudo`,
+  so non-root users hit `Permission denied` during `cp`. The fix
+  prefers user-local writable dirs (`~/.local/bin`, `~/go/bin`,
+  `~/bin`) and only falls back to system dirs if they are writable.
+  Users who want a system-wide install can run the installer with
+  `sudo` or use `--prefix DIR` explicitly.
+
+## [0.1.0-alpha.2] - 2026-06-25
+
 ### Added
 - `opencode-sm uninstall` subcommand for self-uninstall. Accepts
   `--prefix DIR`, `--purge`, and `--dry-run` flags. Available on
@@ -24,6 +39,12 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
   `/releases` plural API endpoint instead of `/releases/latest`.
   The latter returns 404 when only pre-release tags exist, which
   broke install on repos that have not yet cut a stable release.
+
+### Known issues
+- The installer still fails for non-root users on Linux/macOS
+  because it tries to write to `/usr/local/bin` (permission
+  denied). Workaround: use `--prefix ~/.local/bin` or run with
+  `sudo`. Fixed in `0.1.0-alpha.3`.
 
 ## [0.1.0-alpha.1] - 2026-06-25
 

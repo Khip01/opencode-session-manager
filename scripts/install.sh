@@ -120,30 +120,52 @@ build_checksum_url() {
         "$REPO" "$v" "$v_stripped"
 }
 
+is_writable_dir() {
+    local dir="$1"
+    [[ -d "$dir" ]] || return 1
+    [[ -w "$dir" ]] && return 0
+    local testfile
+    testfile=$(mktemp -p "$dir" .write-test-XXXXXX 2>/dev/null) || return 1
+    [[ -n "$testfile" ]] && rm -f "$testfile"
+    return 0
+}
+
 determine_install_dir() {
     if [[ -n "$INSTALL_DIR" ]]; then
-        mkdir -p "$INSTALL_DIR"
+        if ! is_writable_dir "$INSTALL_DIR" && [[ ! -d "$INSTALL_DIR" ]]; then
+            mkdir -p "$INSTALL_DIR" 2>/dev/null || {
+                die "cannot create $INSTALL_DIR (permission denied); re-run with --prefix for a writable dir"
+            }
+        fi
+        if ! is_writable_dir "$INSTALL_DIR"; then
+            die "$INSTALL_DIR is not writable by current user; re-run with sudo or use --prefix ~/.local/bin"
+        fi
         printf '%s\n' "$INSTALL_DIR"
         return
     fi
 
     local candidates=(
-        "/usr/local/bin"
         "$HOME/.local/bin"
         "$HOME/go/bin"
         "$HOME/bin"
+        "/usr/local/bin"
     )
 
     for dir in "${candidates[@]}"; do
-        if [[ ":$PATH:" == *":$dir:"* ]]; then
+        if [[ ":$PATH:" == *":$dir:"* ]] && is_writable_dir "$dir"; then
             mkdir -p "$dir"
             printf '%s\n' "$dir"
             return
         fi
     done
 
+    # Last resort: ~/.local/bin. If even that is not writable, fail
+    # loudly so the user knows to retry with a custom --prefix.
     local fallback="$HOME/.local/bin"
     mkdir -p "$fallback"
+    if ! is_writable_dir "$fallback"; then
+        die "no writable install dir found on PATH; re-run with --prefix DIR for a writable location"
+    fi
     printf '%s\n' "$fallback"
 }
 

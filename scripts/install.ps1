@@ -85,28 +85,51 @@ function Build-ChecksumUrl {
     return "https://github.com/$Repo/releases/download/$v/opencode-session-manager_${vStripped}_checksums.txt"
 }
 
+function Test-IsWritableDir($dir) {
+    if (-not (Test-Path -LiteralPath $dir -PathType Container)) { return $false }
+    try {
+        $test = [System.IO.Path]::Combine($dir, ".write-test-$PID")
+        [System.IO.File]::Create($test).Close()
+        Remove-Item -LiteralPath $test -Force -ErrorAction SilentlyContinue
+        return $true
+    } catch {
+        return $false
+    }
+}
+
 function Determine-InstallDir {
     if ($Prefix) {
-        New-Item -ItemType Directory -Force -Path $Prefix | Out-Null
+        try {
+            New-Item -ItemType Directory -Force -Path $Prefix -ErrorAction Stop | Out-Null
+        } catch {
+            Die "cannot create $Prefix (permission denied); try a different -Prefix"
+        }
+        if (-not (Test-IsWritableDir $Prefix)) {
+            Die "$Prefix is not writable by current user; try a different -Prefix"
+        }
         return $Prefix
     }
 
     $candidates = @(
         "$env:LOCALAPPDATA\Programs\opencode-sm",
-        "$env:LOCALAPPDATA\Microsoft\WindowsApps",
         "$env:USERPROFILE\bin"
     )
 
     foreach ($dir in $candidates) {
-        $pathDirs = $env:PATH -split ';' | ForEach-Object { $_.TrimEnd('\') }
-        if ($pathDirs -contains $dir.TrimEnd('\')) {
-            New-Item -ItemType Directory -Force -Path $dir | Out-Null
-            return $dir
+        $pathDirs = $env:PATH -split ';' | ForEach-Object { $_.TrimEnd('\').ToLowerInvariant() }
+        if ($pathDirs -contains $dir.TrimEnd('\').ToLowerInvariant()) {
+            New-Item -ItemType Directory -Force -Path $dir -ErrorAction SilentlyContinue | Out-Null
+            if (Test-IsWritableDir $dir) {
+                return $dir
+            }
         }
     }
 
     $fallback = "$env:LOCALAPPDATA\Programs\opencode-sm"
     New-Item -ItemType Directory -Force -Path $fallback | Out-Null
+    if (-not (Test-IsWritableDir $fallback)) {
+        Die "no writable install dir found on PATH; retry with -Prefix DIR for a writable location"
+    }
     return $fallback
 }
 
