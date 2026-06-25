@@ -1,0 +1,89 @@
+version: 2
+
+project_name: opencode-session-manager
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - main: ./cmd/opencode-sm
+    binary: opencode-sm
+    id: opencode-sm
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.ShortCommit}}
+      - -X main.date={{.CommitDate}}
+
+archives:
+  - id: default
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- .Arch }}
+    files:
+      - LICENSE
+      - NOTICE
+      - README.md
+
+checksum:
+  name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  use: git
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+  groups:
+    - title: Features
+      regexp: '^feat'
+    - title: Bug fixes
+      regexp: '^fix'
+    - title: Others
+      regexp: '^.*'
+
+release:
+  prerelease: auto
+  draft: false
+  name_template: "{{ .ProjectName }} {{ .Version }}"
+  header: |
+    ## opencode-session-manager {{ .Version }}
+
+    See the [README](https://github.com/Khip01/opencode-session-manager/blob/main/README.md) for documentation.
+
+    ## Installation
+
+    Download the appropriate binary for your platform below.
+
+    Or install with Go:
+
+    ```sh
+    go install github.com/Khip01/opencode-session-manager/cmd/opencode-sm@{{ .Version }}
+    ```
+  footer: |
+    **Full Changelog**: https://github.com/Khip01/opencode-session-manager/compare/{{ .PreviousTag }}...{{ .Tag }}
