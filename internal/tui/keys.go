@@ -5,13 +5,25 @@ import (
 )
 
 type keyMap struct {
-	Up       key.Binding
-	Down     key.Binding
-	NextTab  key.Binding
-	PrevTab  key.Binding
-	Quit     key.Binding
+	Up        key.Binding
+	Down      key.Binding
+	NextTab   key.Binding
+	PrevTab   key.Binding
+	Quit      key.Binding
 	ForceQuit key.Binding
-	Help     key.Binding
+	Help      key.Binding
+
+	Relink key.Binding
+	Manual key.Binding
+	Cancel key.Binding
+	Enter  key.Binding
+
+	UpDown     key.Binding
+	LeftRight  key.Binding
+	Yes        key.Binding
+	No         key.Binding
+	SelectFile key.Binding
+	Back       key.Binding
 }
 
 func defaultKeyMap() keyMap {
@@ -44,17 +56,54 @@ func defaultKeyMap() keyMap {
 			key.WithKeys("?"),
 			key.WithHelp("?", "help"),
 		),
+		Relink: key.NewBinding(
+			key.WithKeys("r"),
+			key.WithHelp("r", "relink selected"),
+		),
+		Manual: key.NewBinding(
+			key.WithKeys("m"),
+			key.WithHelp("m", "manual remap"),
+		),
+		Cancel: key.NewBinding(
+			key.WithKeys("esc"),
+			key.WithHelp("esc", "cancel"),
+		),
+		Enter: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "confirm"),
+		),
+		Yes: key.NewBinding(
+			key.WithKeys("y"),
+			key.WithHelp("y", "yes"),
+		),
+		No: key.NewBinding(
+			key.WithKeys("n"),
+			key.WithHelp("n", "no"),
+		),
+		SelectFile: key.NewBinding(
+			key.WithKeys("enter", " "),
+			key.WithHelp("enter", "select"),
+		),
+		Back: key.NewBinding(
+			key.WithKeys("backspace"),
+			key.WithHelp("backspace", "up dir"),
+		),
 	}
 }
 
-func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Up, k.Down, k.NextTab, k.Help, k.Quit}
+func (k keyMap) listShortHelp() []key.Binding {
+	return []key.Binding{k.Up, k.Down, k.NextTab, k.Relink, k.Quit}
 }
 
-func (k keyMap) FullHelp() [][]key.Binding {
+func (k keyMap) listFullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down},
 		{k.NextTab, k.PrevTab},
+		{k.Relink, k.Manual},
 		{k.Help, k.Quit, k.ForceQuit},
 	}
+}
+
+func (k keyMap) modalShortHelp() []key.Binding {
+	return []key.Binding{k.Up, k.Down, k.Enter, k.Cancel}
 }

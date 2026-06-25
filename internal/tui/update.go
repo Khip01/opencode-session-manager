@@ -19,23 +19,42 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.quitting {
 			return m, nil
 		}
-		return m.handleKey(msg)
+		return m.dispatchKey(msg)
 	}
 
+	return m, m.forwardToComponents(msg)
+}
+
+func (m model) forwardToComponents(msg tea.Msg) tea.Cmd {
+	var cmds []tea.Cmd
 	var cmd tea.Cmd
 	m.list, cmd = m.list.Update(msg)
+	cmds = append(cmds, cmd)
+	m.detail, cmd = m.detail.Update(msg)
+	cmds = append(cmds, cmd)
 	m.refreshDetail()
-	return m, cmd
+	return tea.Batch(cmds...)
 }
 
-func (m model) handleWindowSize(msg tea.WindowSizeMsg) model {
-	m.width = msg.Width
-	m.height = msg.Height
-	m.recomputeLayout()
-	return m
+func (m model) dispatchKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch m.mode {
+	case modeNone:
+		return m.handleListKey(msg)
+	case modeRelinkChoice:
+		return m.handleChoiceKey(msg)
+	case modeFilepicker:
+		return m.handlePickerKey(msg)
+	case modeConfirm:
+		return m.handleConfirmKey(msg)
+	case modeRunningWarn:
+		return m.handleRunningKey(msg)
+	case modeResult:
+		return m.handleResultKey(msg)
+	}
+	return m, nil
 }
 
-func (m model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m model) handleListKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, m.keys.Quit):
 		m.quitting = true
@@ -49,12 +68,113 @@ func (m model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, m.keys.PrevTab):
 		m.switchTab(-1)
 		return m, nil
+	case key.Matches(msg, m.keys.Relink):
+		if _, ok := selectedItem(m.list); ok {
+			m.openRelinkChoice()
+			return m, nil
+		}
+	case key.Matches(msg, m.keys.Manual):
+		if si, ok := selectedItem(m.list); ok {
+			m.modal.pending = &pendingRelink{
+				sessionID:    si.session.ID,
+				sessionTitle: si.session.Title,
+				sessionKind:  si.kind,
+				oldDirectory: si.session.Directory,
+				strategy:     strategyManual,
+			}
+			m.startManualPath()
+			return m, nil
+		}
 	}
 
 	var cmd tea.Cmd
 	m.list, cmd = m.list.Update(msg)
 	m.refreshDetail()
 	return m, cmd
+}
+
+func (m model) handleChoiceKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keys.Cancel):
+		m.mode = modeNone
+		m.modal.clear()
+		return m, nil
+	case key.Matches(msg, m.keys.Up):
+		if m.modal.choiceIdx > 0 {
+			m.modal.choiceIdx--
+		}
+		return m, nil
+	case key.Matches(msg, m.keys.Down):
+		if m.modal.choiceIdx < len(m.modal.choiceOptions)-1 {
+			m.modal.choiceIdx++
+		}
+		return m, nil
+	case key.Matches(msg, m.keys.Enter):
+		m.confirmChoice()
+		return m, nil
+	}
+	return m, nil
+}
+
+func (m model) handlePickerKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	oldDir := m.picker.CurrentDirectory
+	m.picker, cmd = m.picker.Update(msg)
+
+	if selected, path := m.picker.DidSelectFile(msg); selected {
+		_ = oldDir
+		if m.modal.pending != nil {
+			m.modal.pending.newDirectory = path
+		}
+		m.proceedWithRunningCheck()
+		return m, cmd
+	}
+
+	if key.Matches(msg, m.keys.Cancel) {
+		m.mode = modeNone
+		m.modal.clear()
+		return m, cmd
+	}
+	return m, cmd
+}
+
+func (m model) handleConfirmKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keys.Yes), key.Matches(msg, m.keys.Enter):
+		m.doApply()
+		return m, nil
+	case key.Matches(msg, m.keys.No), key.Matches(msg, m.keys.Cancel):
+		m.mode = modeNone
+		m.modal.clear()
+		return m, nil
+	}
+	return m, nil
+}
+
+func (m model) handleRunningKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keys.Yes), key.Matches(msg, m.keys.Enter):
+		m.killRunningAndProceed()
+		return m, nil
+	case key.Matches(msg, m.keys.No), key.Matches(msg, m.keys.Cancel):
+		m.mode = modeNone
+		m.modal.clear()
+		return m, nil
+	}
+	return m, nil
+}
+
+func (m model) handleResultKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	m.mode = modeNone
+	m.modal.clear()
+	return m, nil
+}
+
+func (m model) handleWindowSize(msg tea.WindowSizeMsg) model {
+	m.width = msg.Width
+	m.height = msg.Height
+	m.recomputeLayout()
+	return m
 }
 
 func (m *model) switchTab(delta int) {

@@ -24,6 +24,8 @@ type styles struct {
 	listPanel    lipgloss.Style
 	detailPanel  lipgloss.Style
 	helpBar      lipgloss.Style
+	modalBox     lipgloss.Style
+	dimmed       lipgloss.Style
 }
 
 type palette struct {
@@ -129,5 +131,15 @@ func defaultStyles() styles {
 			Foreground(p.muted).
 			Background(p.panel).
 			Padding(0, 1),
+
+		modalBox: lipgloss.NewStyle().
+			Border(lipgloss.DoubleBorder()).
+			BorderForeground(p.accent).
+			Background(p.panel).
+			Foreground(p.fg).
+			Padding(1, 2),
+
+		dimmed: lipgloss.NewStyle().
+			Foreground(p.muted),
 	}
 }

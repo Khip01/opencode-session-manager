@@ -82,11 +82,18 @@ func TestKeyMap_Defaults(t *testing.T) {
 	assert.NotEmpty(t, km.Down.Keys())
 	assert.NotEmpty(t, km.Quit.Keys())
 	assert.NotEmpty(t, km.ForceQuit.Keys())
+	assert.NotEmpty(t, km.Relink.Keys())
+	assert.NotEmpty(t, km.Manual.Keys())
+	assert.NotEmpty(t, km.Cancel.Keys())
+	assert.NotEmpty(t, km.Enter.Keys())
+	assert.NotEmpty(t, km.Yes.Keys())
+	assert.NotEmpty(t, km.No.Keys())
 }
 
 func TestKeyMap_ShortAndFullHelp(t *testing.T) {
 	km := defaultKeyMap()
-	assert.NotEmpty(t, km.ShortHelp())
-	assert.NotEmpty(t, km.FullHelp())
-	assert.GreaterOrEqual(t, len(km.FullHelp()), 3)
+	assert.NotEmpty(t, km.listShortHelp())
+	assert.NotEmpty(t, km.listFullHelp())
+	assert.GreaterOrEqual(t, len(km.listFullHelp()), 3)
+	assert.NotEmpty(t, km.modalShortHelp())
 }
