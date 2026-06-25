@@ -22,7 +22,7 @@ var (
 
 func DetectRunningInstances() ([]RunningProcess, error) {
 	if runtime.GOOS != "linux" {
-		return nil, nil
+		return []RunningProcess{}, nil
 	}
 
 	entries, err := os.ReadDir("/proc")

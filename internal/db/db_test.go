@@ -10,15 +10,19 @@ import (
 )
 
 func TestResolvePath_WithOverride(t *testing.T) {
-	got, err := ResolvePath("/tmp/custom.db")
+	override := filepath.Join(os.TempDir(), "custom.db")
+	got, err := ResolvePath(override)
 	require.NoError(t, err)
-	assert.Equal(t, "/tmp/custom.db", got)
+	assert.Equal(t, override, got)
 }
 
 func TestResolvePath_WithRelativeOverride(t *testing.T) {
-	got, err := ResolvePath("./relative/path.db")
+	input := filepath.Join(".", "relative", "path.db")
+	expected := filepath.Clean(input)
+
+	got, err := ResolvePath(input)
 	require.NoError(t, err)
-	assert.Equal(t, "relative/path.db", got)
+	assert.Equal(t, expected, got)
 }
 
 func TestResolvePath_DefaultUsesHome(t *testing.T) {

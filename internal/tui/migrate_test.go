@@ -101,7 +101,8 @@ func TestConfirmMigrate_PopulatesPreview(t *testing.T) {
 	assert.Equal(t, modeConfirm, m.mode)
 	require.NotEmpty(t, m.modal.migratePreview)
 	assert.Contains(t, m.modal.prompt, "Apply migrate?")
-	assert.Contains(t, m.modal.prompt, "dst-")
+	assert.Contains(t, m.modal.prompt, "Source:")
+	assert.Contains(t, m.modal.prompt, "Target:")
 	assert.Contains(t, m.modal.prompt, "ses_m1")
 }
 
