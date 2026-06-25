@@ -1,0 +1,67 @@
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - errcheck
+    - gocheckcompilerdirectives
+    - gofmt
+    - goimports
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - nilerr
+    - prealloc
+    - revive
+    - staticcheck
+    - testifylint
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+
+linters-settings:
+  gosec:
+    excludes:
+      - G104
+      - G107
+  goimports:
+    local-prefixes: github.com/Khip01/opencode-session-manager
+  misspell:
+    locale: US,ID
+  revive:
+    rules:
+      - name: exported
+        disabled: false
+      - name: package-comments
+        disabled: true
+      - name: var-naming
+        disabled: true
+  staticcheck:
+    checks:
+      - all
+      - -SA1019
+      - -ST1000
+      - -ST1003
+  testifylint:
+    disable:
+      - require-error
+
+issues:
+  max-same-issues: 0
+  max-issues-per-linter: 0
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+        - gocyclo
+    - path: internal/tui/watch_test.go
+      linters:
+        - revive

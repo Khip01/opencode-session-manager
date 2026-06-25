@@ -16,6 +16,7 @@ var version = defaultVersion
 func main() {
 	var (
 		dbPath  = flag.String("db-path", "", "Path to opencode.db (default: ~/.local/share/opencode/opencode.db)")
+		watch   = flag.Bool("watch", false, "Auto-refresh session list when opencode.db changes")
 		showVer = flag.Bool("version", false, "Print version and exit")
 	)
 
@@ -41,6 +42,7 @@ func main() {
 	if err := tui.Run(tui.Options{
 		DBPath:  resolved,
 		Version: version,
+		Watch:   *watch,
 	}); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)

@@ -13,7 +13,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case sessionsLoadedMsg:
 		m = m.applyLoaded(msg)
+		if m.watching {
+			return m, watchTick()
+		}
 		return m, nil
+
+	case watchTickMsg:
+		cmd := m.handleWatchTick()
+		return m, cmd
 
 	case tea.KeyPressMsg:
 		if m.quitting {
@@ -90,6 +97,8 @@ func (m model) handleListKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.openMigrateFlow()
 			return m, nil
 		}
+	case key.Matches(msg, m.keys.Watch):
+		return m, m.toggleWatch()
 	}
 
 	var cmd tea.Cmd

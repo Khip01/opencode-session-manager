@@ -19,6 +19,7 @@ type keyMap struct {
 	Cancel key.Binding
 	Enter  key.Binding
 	Filter key.Binding
+	Watch  key.Binding
 
 	UpDown     key.Binding
 	LeftRight  key.Binding
@@ -82,6 +83,10 @@ func defaultKeyMap() keyMap {
 			key.WithKeys("/"),
 			key.WithHelp("/", "filter"),
 		),
+		Watch: key.NewBinding(
+			key.WithKeys("w"),
+			key.WithHelp("w", "watch db"),
+		),
 		Yes: key.NewBinding(
 			key.WithKeys("y"),
 			key.WithHelp("y", "yes"),
@@ -108,7 +113,7 @@ func (k keyMap) listShortHelp() []key.Binding {
 func (k keyMap) listFullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down},
-		{k.Filter},
+		{k.Filter, k.Watch},
 		{k.NextTab, k.PrevTab},
 		{k.Relink, k.Manual, k.Migrate},
 		{k.Help, k.Quit, k.ForceQuit},

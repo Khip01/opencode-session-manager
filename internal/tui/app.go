@@ -19,6 +19,7 @@ import (
 type Options struct {
 	DBPath  string
 	Version string
+	Watch   bool
 }
 
 type sessionsLoadedMsg struct {
@@ -71,8 +72,9 @@ type model struct {
 	err      error
 	status   string
 
-	mode  modeID
-	modal modalState
+	mode     modeID
+	modal    modalState
+	watching bool
 }
 
 func newModel(opts Options, handle *sql.DB) model {
@@ -98,11 +100,16 @@ func newModel(opts Options, handle *sql.DB) model {
 		status:   "loading…",
 		mode:     modeNone,
 		modal:    newModalState(),
+		watching: opts.Watch,
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	return loadSessionsCmd(m.loader)
+	cmds := []tea.Cmd{loadSessionsCmd(m.loader)}
+	if m.watching {
+		cmds = append(cmds, watchTick())
+	}
+	return tea.Batch(cmds...)
 }
 
 func loadSessionsCmd(loader *dataLoader) tea.Cmd {
@@ -167,7 +174,11 @@ func (m model) overlayModal(base, content string) string {
 
 func (m model) renderHeader() string {
 	left := m.styles.header.Render(" opencode-sm " + m.options.Version + " ")
-	right := m.styles.subtle.Render("DB: " + m.options.DBPath)
+	watch := ""
+	if m.watching {
+		watch = m.styles.statusOK.Render(" ● watching")
+	}
+	right := m.styles.subtle.Render("DB: " + m.options.DBPath) + watch
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 }
 

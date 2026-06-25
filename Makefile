@@ -1,4 +1,4 @@
-.PHONY: build run test test-race lint tidy clean deps help
+.PHONY: build run test test-race test-coverage lint tidy clean deps help
 
 BINARY  := opencode-sm
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -13,6 +13,9 @@ build:
 run: build
 	$(BUILD)
 
+watch-run: build
+	$(BUILD) --watch
+
 test:
 	go test $(PKGS)
 
@@ -20,8 +23,10 @@ test-race:
 	go test -race $(PKGS)
 
 test-coverage:
-	go test -coverprofile=coverage.out $(PKGS)
+	go test -coverprofile=coverage.out -covermode=atomic $(PKGS)
 	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report: coverage.html"
+	@go tool cover -func=coverage.out | tail -1
 
 lint:
 	golangci-lint run $(PKGS)
@@ -39,6 +44,7 @@ help:
 	@echo "Available targets:"
 	@echo "  build           Build the binary to ./bin/$(BINARY)"
 	@echo "  run             Build and run the binary"
+	@echo "  watch-run       Build and run with watch mode enabled"
 	@echo "  test            Run unit tests"
 	@echo "  test-race       Run tests with race detector"
 	@echo "  test-coverage   Run tests and produce coverage.html"
