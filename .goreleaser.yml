@@ -74,16 +74,52 @@ release:
   header: |
     ## opencode-session-manager {{ .Version }}
 
-    See the [README](https://github.com/Khip01/opencode-session-manager/blob/main/README.md) for documentation.
+    See the [README](https://github.com/Khip01/opencode-session-manager/blob/main/README.md) for full documentation.
 
     ## Installation
 
-    Download the appropriate binary for your platform below.
+    ### One-line install (recommended)
 
-    Or install with Go:
+    Linux / macOS:
+
+    ```sh
+    curl -fsSL https://raw.githubusercontent.com/Khip01/opencode-session-manager/{{ .Version }}/scripts/install.sh | bash
+    ```
+
+    Windows (PowerShell):
+
+    ```powershell
+    irm https://raw.githubusercontent.com/Khip01/opencode-session-manager/{{ .Version }}/scripts/install.ps1 | iex
+    ```
+
+    ### Or via Go
 
     ```sh
     go install github.com/Khip01/opencode-session-manager/cmd/opencode-sm@{{ .Version }}
     ```
+
+    ### Or download a binary
+
+    Download the appropriate archive from the assets below, verify
+    the SHA256 checksum against `*_checksums.txt`, and extract the
+    `opencode-sm` binary into a directory on your `PATH`.
+
+    ## Uninstallation
+
+    If you installed via the binary or `go install`:
+
+    ```sh
+    opencode-sm uninstall              # remove binary from standard locations
+    opencode-sm uninstall --purge      # also remove ~/.config/opencode-sm/
+    opencode-sm uninstall --dry-run    # preview without removing
+    ```
+
+    If the binary is missing or broken, use the fallback script:
+
+    Linux / macOS: `bash scripts/uninstall.sh`
+    Windows (PowerShell): `powershell -File scripts/uninstall.ps1`
+
+    Both fallback scripts delegate to `opencode-sm uninstall` when the
+    binary is available on `PATH`.
   footer: |
     **Full Changelog**: https://github.com/Khip01/opencode-session-manager/compare/{{ .PreviousTag }}...{{ .Tag }}
