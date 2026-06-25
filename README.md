@@ -36,7 +36,7 @@ not yet ship:
 │    [!] ses_18180ef2a7  Analisis Lag    │                                                       │
 │    [!] ses_181d994e2f  Analisis Lag    │  ID:           ses_18160c697ffe1ZbKpabSTmp6Gd         │
 │    [!] ses_181603040f  Explore codeba   │  Directory:    /mnt/external/Khip/campus/...         │
-│    ────────────────────────────────  │  Status:       ORPHAN — directory does not exist    │
+│    ────────────────────────────────  │  Status:       ORPHAN, directory does not exist     │
 │    [ ] ses_102d0b637f  Opencode sess   │                                                       │
 │    [ ] ses_10cee4094f  Audit Linux-s   │  Agent:        build                                  │
 │    [ ] ses_10d377caaf  Opencode Disc   │  Project ID:   19442b1bcfca0cf7b504c1bad92782d792...   │
@@ -56,23 +56,86 @@ not yet ship:
 
 ## Installation
 
-### From source
+### Option 1: One-line install (recommended)
+
+**Linux / macOS:**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Khip01/opencode-session-manager/main/scripts/install.sh | bash
+```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/Khip01/opencode-session-manager/main/scripts/install.ps1 | iex
+```
+
+This downloads the latest release, verifies the SHA256 checksum, and installs
+to the first writable directory in your `PATH` (usually `/usr/local/bin` or
+`~/.local/bin`). Use `--prefix DIR` to override, or `--dry-run` to preview.
+
+### Option 2: Download from GitHub Releases
+
+Visit [Releases](https://github.com/Khip01/opencode-session-manager/releases),
+download the archive for your platform, verify checksum, and extract:
+
+```sh
+# Example for Linux x86_64
+curl -L -O https://github.com/Khip01/opencode-session-manager/releases/latest/download/opencode-session-manager_Linux_amd64.tar.gz
+tar -xzf opencode-session-manager_Linux_amd64.tar.gz
+sudo mv opencode-sm_Linux_amd64_v1/opencode-sm /usr/local/bin/
+```
+
+### Option 3: Install with Go
 
 ```sh
 go install github.com/Khip01/opencode-session-manager/cmd/opencode-sm@latest
 ```
 
-### Build locally
+The binary installs to `$(go env GOPATH)/bin` (usually `~/go/bin`).
+
+### Option 4: Build from source
 
 ```sh
-make build
-./bin/opencode-sm
+git clone https://github.com/Khip01/opencode-session-manager
+cd opencode-session-manager
+make build           # produces ./bin/opencode-sm
+make install PREFIX=$HOME/.local/bin   # installs to ~/.local/bin/opencode-sm
 ```
 
 ### Requirements
 
-- Go 1.22+ (tested on 1.26)
-- No CGO required (pure-Go SQLite via `modernc.org/sqlite`)
+- Go 1.22+ to build from source (tested on 1.26)
+- No CGO required for binary distribution (pure-Go SQLite via `modernc.org/sqlite`)
+
+### Uninstallation
+
+**Linux / macOS:**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Khip01/opencode-session-manager/main/scripts/uninstall.sh | bash
+# or: bash scripts/uninstall.sh
+# add --purge to also remove ~/.config/opencode-sm/ if present
+# add --dry-run to preview without removing
+```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/Khip01/opencode-session-manager/main/scripts/uninstall.ps1 | iex
+# or: powershell -File scripts/uninstall.ps1
+```
+
+### Shell Completions
+
+Pre-built completion files are in `scripts/completions/`:
+
+| Shell | File | Install Location |
+|---|---|---|
+| bash | `opencode-sm.bash` | `/etc/bash_completion.d/` or `~/.local/share/bash-completion/completions/` |
+| zsh | `_opencode-sm` | any directory in `$fpath` (e.g. `/usr/share/zsh/site-functions/`) |
+| fish | `opencode-sm.fish` | `~/.config/fish/completions/` |
+| PowerShell | `opencode-sm.ps1` | add to your PowerShell profile (`$PROFILE`) |
 
 ## Usage
 
@@ -138,7 +201,7 @@ For moving N most recent sessions from one project to another:
 1. Press `x` on any session
 2. Pick the target project directory (must already exist as a `project.worktree`)
 3. Preview the N sessions that will be migrated (default N=5)
-4. Confirm to apply — both `session.directory` and `session.project_id` are updated
+4. Confirm to apply. Both `session.directory` and `session.project_id` are updated
 
 Sessions already in the target project are skipped automatically.
 
@@ -149,14 +212,14 @@ Sessions already in the target project are skipped automatically.
 - All writes use SQL transactions for atomicity.
 - Only `session.directory` (and `session.project_id` for migrate) are modified.
   Conversation content in `session_message` and `part` is never touched.
-- Running-instance detection is advisory — you can proceed without killing,
+- Running-instance detection is advisory; you can proceed without killing,
   because SQLite handles concurrent access via file locking.
 - The relinker API is exported from `internal/relinker` and can be invoked
   programmatically without the TUI if you need a scriptable recovery path.
 
 ## Status
 
-This is **v0.x software** — feature-complete enough for daily use, but APIs
+This is **v0.x software**, feature-complete enough for daily use, but APIs
 and database formats may change before 1.0. Pin to a tag in production.
 
 | Milestone | Status |

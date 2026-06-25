@@ -23,7 +23,7 @@ func (m *model) watchOn() {
 	}
 	m.watching = true
 	m.status = m.styles.statusOK.Render(
-		"watching opencode.db — auto-refresh every " + defaultWatchInterval.String(),
+		"watching opencode.db, auto-refresh every " + defaultWatchInterval.String(),
 	)
 }
 
@@ -32,7 +32,7 @@ func (m *model) watchOff() {
 		return
 	}
 	m.watching = false
-	m.status = m.styles.subtle.Render("watch paused — press w to resume")
+	m.status = m.styles.subtle.Render("watch paused, press w to resume")
 }
 
 func (m *model) toggleWatch() tea.Cmd {
@@ -62,7 +62,7 @@ func (m *model) handleWatchTick() tea.Cmd {
 	m.refreshDetail()
 	if changed {
 		m.status = m.styles.statusOK.Render(
-			"watch: refreshed — " + statusSummary(len(orphans), len(active)),
+			"watch: refreshed, " + statusSummary(len(orphans), len(active)),
 		)
 	}
 	return watchTick()

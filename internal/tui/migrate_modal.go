@@ -86,7 +86,7 @@ func (m *model) doMigrate() {
 
 	if len(matches) == 0 {
 		m.showResult(
-			"All recent sessions already belong to the target project — nothing to migrate.",
+			"All recent sessions already belong to the target project. Nothing to migrate.",
 			resultWarn,
 		)
 		m.refreshSessions()

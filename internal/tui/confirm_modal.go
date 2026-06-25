@@ -19,12 +19,12 @@ func (m modalState) renderConfirm() string {
 
 func (m modalState) renderResult() string {
 	var b strings.Builder
-	prefix := "✓ "
+	prefix := "OK "
 	switch m.resultKind {
 	case resultWarn:
-		prefix = "⚠ "
+		prefix = "WARN "
 	case resultErr:
-		prefix = "✗ "
+		prefix = "ERR "
 	}
 	b.WriteString(prefix)
 	b.WriteString(m.resultMsg)

@@ -237,7 +237,7 @@ func (m model) renderBody() string {
 func (m model) renderFooter() string {
 	status := m.status
 	if status == "" {
-		status = m.styles.subtle.Render("ready — r: relink · m: manual · x: migrate · /: filter · q: quit")
+		status = m.styles.subtle.Render("ready: r=relink, m=manual, x=migrate, /=filter, q=quit")
 	}
 	helpView := m.help.ShortHelpView(m.keys.listShortHelp())
 	bar := m.styles.helpBar.Width(m.width).Render(helpView)

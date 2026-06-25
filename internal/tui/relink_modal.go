@@ -90,7 +90,7 @@ func (m *model) startPhase1() {
 
 	if found == nil {
 		m.showResult(
-			"Phase 1 could not match this session — its project_id is missing or unknown.\n\nUse Manual path remap instead.",
+			"Phase 1 could not match this session. The project_id is missing or unknown.\n\nUse Manual path remap instead.",
 			resultWarn,
 		)
 		return

@@ -30,9 +30,9 @@ func renderDetail(s sessionItem, styles styles) string {
 
 	b.WriteString(styles.detailLabel.Render("Status:      "))
 	if s.kind == itemKindOrphan {
-		b.WriteString(styles.detailWarn.Render("ORPHAN — directory does not exist on disk"))
+		b.WriteString(styles.detailWarn.Render("ORPHAN, directory does not exist on disk"))
 	} else {
-		b.WriteString(styles.detailOK.Render("active — directory exists"))
+		b.WriteString(styles.detailOK.Render("active, directory exists"))
 	}
 	b.WriteString("\n")
 
@@ -72,7 +72,7 @@ func renderDetail(s sessionItem, styles styles) string {
 
 func orDash(s string) string {
 	if s == "" {
-		return "—"
+		return "-"
 	}
 	return s
 }
@@ -86,7 +86,7 @@ func boolText(b bool) string {
 
 func formatTime(ms int64) string {
 	if ms == 0 {
-		return "—"
+		return "-"
 	}
 	t := time.UnixMilli(ms)
 	return t.Format("2006-01-02 15:04:05 MST")
