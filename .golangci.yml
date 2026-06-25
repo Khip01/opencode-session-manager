@@ -1,15 +1,14 @@
+version: "2"
 run:
   timeout: 5m
   tests: true
 
 linters:
-  disable-all: true
+  default: none
   enable:
     - bodyclose
     - errcheck
     - gocheckcompilerdirectives
-    - gofmt
-    - goimports
     - gosec
     - govet
     - ineffassign
@@ -26,13 +25,19 @@ linters:
     - unparam
     - unused
 
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes: github.com/Khip01/opencode-session-manager
+
 linters-settings:
   gosec:
     excludes:
       - G104
       - G107
-  goimports:
-    local-prefixes: github.com/Khip01/opencode-session-manager
   misspell:
     locale: US,ID
   revive:
