@@ -15,8 +15,10 @@ type keyMap struct {
 
 	Relink key.Binding
 	Manual key.Binding
+	Migrate key.Binding
 	Cancel key.Binding
 	Enter  key.Binding
+	Filter key.Binding
 
 	UpDown     key.Binding
 	LeftRight  key.Binding
@@ -64,6 +66,10 @@ func defaultKeyMap() keyMap {
 			key.WithKeys("m"),
 			key.WithHelp("m", "manual remap"),
 		),
+		Migrate: key.NewBinding(
+			key.WithKeys("x"),
+			key.WithHelp("x", "migrate to project"),
+		),
 		Cancel: key.NewBinding(
 			key.WithKeys("esc"),
 			key.WithHelp("esc", "cancel"),
@@ -71,6 +77,10 @@ func defaultKeyMap() keyMap {
 		Enter: key.NewBinding(
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "confirm"),
+		),
+		Filter: key.NewBinding(
+			key.WithKeys("/"),
+			key.WithHelp("/", "filter"),
 		),
 		Yes: key.NewBinding(
 			key.WithKeys("y"),
@@ -92,14 +102,15 @@ func defaultKeyMap() keyMap {
 }
 
 func (k keyMap) listShortHelp() []key.Binding {
-	return []key.Binding{k.Up, k.Down, k.NextTab, k.Relink, k.Quit}
+	return []key.Binding{k.Up, k.Down, k.Filter, k.Relink, k.Quit}
 }
 
 func (k keyMap) listFullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down},
+		{k.Filter},
 		{k.NextTab, k.PrevTab},
-		{k.Relink, k.Manual},
+		{k.Relink, k.Manual, k.Migrate},
 		{k.Help, k.Quit, k.ForceQuit},
 	}
 }

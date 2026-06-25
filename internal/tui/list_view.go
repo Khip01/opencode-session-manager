@@ -12,7 +12,8 @@ func newList(items []sessionItem, width, height int) list.Model {
 	l.Title = "Sessions"
 	l.SetShowTitle(false)
 	l.SetShowStatusBar(true)
-	l.SetShowFilter(false)
+	l.SetShowFilter(true)
+	l.SetFilteringEnabled(true)
 	l.SetShowHelp(false)
 	l.SetStatusBarItemName("session", "sessions")
 

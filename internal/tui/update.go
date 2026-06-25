@@ -85,6 +85,11 @@ func (m model) handleListKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.startManualPath()
 			return m, nil
 		}
+	case key.Matches(msg, m.keys.Migrate):
+		if _, ok := selectedItem(m.list); ok {
+			m.openMigrateFlow()
+			return m, nil
+		}
 	}
 
 	var cmd tea.Cmd
@@ -118,15 +123,13 @@ func (m model) handleChoiceKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 func (m model) handlePickerKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-	oldDir := m.picker.CurrentDirectory
 	m.picker, cmd = m.picker.Update(msg)
 
 	if selected, path := m.picker.DidSelectFile(msg); selected {
-		_ = oldDir
 		if m.modal.pending != nil {
 			m.modal.pending.newDirectory = path
 		}
-		m.proceedWithRunningCheck()
+		m.proceedToConfirmAfterPicker()
 		return m, cmd
 	}
 
@@ -141,7 +144,11 @@ func (m model) handlePickerKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 func (m model) handleConfirmKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, m.keys.Yes), key.Matches(msg, m.keys.Enter):
-		m.doApply()
+		if m.modal.pending != nil && m.modal.pending.strategy == strategyMigrate {
+			m.doMigrate()
+		} else {
+			m.doApply()
+		}
 		return m, nil
 	case key.Matches(msg, m.keys.No), key.Matches(msg, m.keys.Cancel):
 		m.mode = modeNone

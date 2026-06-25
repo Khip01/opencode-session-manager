@@ -8,9 +8,9 @@ import (
 )
 
 type applyResult struct {
-	updated   int
-	backupAt  string
-	err       error
+	updated  int
+	backupAt string
+	err      error
 }
 
 func (m *model) applyPending() applyResult {

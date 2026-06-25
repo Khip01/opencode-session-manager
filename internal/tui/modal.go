@@ -1,6 +1,10 @@
 package tui
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/Khip01/opencode-session-manager/internal/db"
+)
 
 type modeID int
 
@@ -37,6 +41,7 @@ type relinkStrategy int
 const (
 	strategyPhase1 relinkStrategy = iota
 	strategyManual
+	strategyMigrate
 )
 
 func (s relinkStrategy) Label() string {
@@ -45,6 +50,8 @@ func (s relinkStrategy) Label() string {
 		return "Phase 1 (project_id)"
 	case strategyManual:
 		return "Manual path remap"
+	case strategyMigrate:
+		return "Cross-project migrate"
 	default:
 		return "Unknown"
 	}
@@ -58,6 +65,7 @@ type pendingRelink struct {
 
 	strategy    relinkStrategy
 	newDirectory string
+	migrateCount int
 
 	phase1Match *relinkerMatch
 
@@ -88,6 +96,8 @@ type modalState struct {
 	choiceOptions []string
 
 	pending *pendingRelink
+
+	migratePreview []db.Session
 }
 
 func newModalState() modalState {

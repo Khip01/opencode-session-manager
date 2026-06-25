@@ -49,6 +49,20 @@ func (m *model) confirmChoice() {
 	}
 }
 
+func (m *model) proceedToConfirmAfterPicker() {
+	p := m.modal.pending
+	if p == nil {
+		m.mode = modeNone
+		m.modal.clear()
+		return
+	}
+	if p.strategy == strategyMigrate {
+		m.confirmMigrate()
+		return
+	}
+	m.proceedWithRunningCheck()
+}
+
 func (m *model) startPhase1() {
 	if m.relinker == nil {
 		m.showResult("internal error: relinker not set", resultErr)
