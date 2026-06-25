@@ -56,8 +56,8 @@ func TestDataLoader_SeparatesOrphansAndActive(t *testing.T) {
 
 	inserts := []struct {
 		id, pid, dir, title string
-		archived           int64
-		parent             string
+		archived            int64
+		parent              string
 	}{
 		{"ses_active1", "proj_git", aliveDir, "active 1", 0, ""},
 		{"ses_active2", "", aliveDir, "active 2 no pid", 0, ""},

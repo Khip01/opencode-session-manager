@@ -3,8 +3,9 @@ package tui
 import (
 	"testing"
 
-	"github.com/Khip01/opencode-session-manager/internal/db"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Khip01/opencode-session-manager/internal/db"
 )
 
 func TestSessionItem_TitleAndDescription(t *testing.T) {

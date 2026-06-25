@@ -12,7 +12,7 @@ import (
 
 const (
 	defaultRelativePath = ".local/share/opencode/opencode.db"
-	defaultFileMode      = os.FileMode(0o644)
+	defaultFileMode     = os.FileMode(0o644)
 )
 
 var (

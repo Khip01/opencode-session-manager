@@ -8,11 +8,11 @@ import (
 	"github.com/Khip01/opencode-session-manager/internal/db"
 	"github.com/Khip01/opencode-session-manager/internal/relinker"
 
-	tea "charm.land/bubbletea/v2"
 	"charm.land/bubbles/v2/filepicker"
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/list"
 	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
 
@@ -178,7 +178,7 @@ func (m model) renderHeader() string {
 	if m.watching {
 		watch = m.styles.statusOK.Render(" ● watching")
 	}
-	right := m.styles.subtle.Render("DB: " + m.options.DBPath) + watch
+	right := m.styles.subtle.Render("DB: "+m.options.DBPath) + watch
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 }
 

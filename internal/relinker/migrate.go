@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	StrategyMigrate = "migrate"
+	StrategyMigrate     = "migrate"
 	DefaultMigrateCount = 5
 )
 
@@ -30,7 +30,7 @@ func (r *Relinker) Migrate(ctx context.Context, oldPath, newPath string, count i
 		return nil, fmt.Errorf("%w: old and new paths are identical (%s)", ErrInvalidMatch, oldNorm)
 	}
 
-	handle, err := r.open(ctx)
+	handle, err := r.open()
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (r *Relinker) Migrate(ctx context.Context, oldPath, newPath string, count i
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	stmt, err := tx.PrepareContext(ctx, `UPDATE session SET directory = ?, project_id = ? WHERE id = ?`)
 	if err != nil {
@@ -129,7 +129,7 @@ func (r *Relinker) PreviewMigrate(ctx context.Context, oldPath string, count int
 		count = DefaultMigrateCount
 	}
 	oldNorm := filepath.Clean(oldPath)
-	handle, err := r.open(ctx)
+	handle, err := r.open()
 	if err != nil {
 		return nil, err
 	}

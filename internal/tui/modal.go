@@ -63,13 +63,11 @@ type pendingRelink struct {
 	sessionKind  itemKind
 	oldDirectory string
 
-	strategy    relinkStrategy
+	strategy     relinkStrategy
 	newDirectory string
 	migrateCount int
 
 	phase1Match *relinkerMatch
-
-	runningProcs []RunningProcess
 }
 
 type relinkerMatch struct {
@@ -87,10 +85,10 @@ const (
 )
 
 type modalState struct {
-	prompt        string
-	warnProcs     []RunningProcess
-	resultMsg     string
-	resultKind    resultKind
+	prompt     string
+	warnProcs  []RunningProcess
+	resultMsg  string
+	resultKind resultKind
 
 	choiceIdx     int
 	choiceOptions []string

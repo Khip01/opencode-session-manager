@@ -94,11 +94,11 @@ func scanSession(s scanner) (Session, error) {
 
 func scanSessionRow(s scanner) (Session, error) {
 	var (
-		sess        Session
-		parentID    sql.NullString
-		projectID   sql.NullString
-		agent       sql.NullString
-		timeArch    sql.NullInt64
+		sess      Session
+		parentID  sql.NullString
+		projectID sql.NullString
+		agent     sql.NullString
+		timeArch  sql.NullInt64
 	)
 	err := s.Scan(
 		&sess.ID,

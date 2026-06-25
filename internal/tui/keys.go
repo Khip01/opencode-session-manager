@@ -13,13 +13,13 @@ type keyMap struct {
 	ForceQuit key.Binding
 	Help      key.Binding
 
-	Relink key.Binding
-	Manual key.Binding
+	Relink  key.Binding
+	Manual  key.Binding
 	Migrate key.Binding
-	Cancel key.Binding
-	Enter  key.Binding
-	Filter key.Binding
-	Watch  key.Binding
+	Cancel  key.Binding
+	Enter   key.Binding
+	Filter  key.Binding
+	Watch   key.Binding
 
 	UpDown     key.Binding
 	LeftRight  key.Binding

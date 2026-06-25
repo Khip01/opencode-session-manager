@@ -23,7 +23,7 @@ func (r *Relinker) RelinkByPath(ctx context.Context, oldPath, newPath string) ([
 		return nil, fmt.Errorf("backup before write: %w", err)
 	}
 
-	handle, err := r.open(ctx)
+	handle, err := r.open()
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (r *Relinker) RelinkByPath(ctx context.Context, oldPath, newPath string) ([
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	stmt, err := tx.PrepareContext(ctx, `UPDATE session SET directory = ? WHERE id = ?`)
 	if err != nil {
@@ -88,7 +88,7 @@ func (r *Relinker) RelinkByPath(ctx context.Context, oldPath, newPath string) ([
 }
 
 func (r *Relinker) PreviewByPath(ctx context.Context, oldPath string) ([]db.Session, error) {
-	handle, err := r.open(ctx)
+	handle, err := r.open()
 	if err != nil {
 		return nil, err
 	}

@@ -1,8 +1,8 @@
 package tui
 
 import (
-	tea "charm.land/bubbletea/v2"
 	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
 )
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -180,7 +180,7 @@ func (m model) handleRunningKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) handleResultKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m model) handleResultKey(_ tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	m.mode = modeNone
 	m.modal.clear()
 	return m, nil

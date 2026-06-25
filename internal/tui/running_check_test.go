@@ -23,7 +23,7 @@ func TestReadProcess_CurrentProcessReturnsInfo(t *testing.T) {
 		t.Skip("/proc not available on this system")
 	}
 	assert.NotEmpty(t, proc.Comm)
-	assert.Greater(t, proc.PID, 0)
+	assert.Positive(t, proc.PID)
 }
 
 func TestDetectRunningInstances_NoPanicOnLinux(t *testing.T) {

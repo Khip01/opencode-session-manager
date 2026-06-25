@@ -5,9 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Khip01/opencode-session-manager/internal/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Khip01/opencode-session-manager/internal/db"
 
 	_ "modernc.org/sqlite"
 )

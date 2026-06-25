@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	ErrNoMatches       = errors.New("no matches found")
-	ErrInvalidMatch    = errors.New("invalid match: empty session id or directory")
+	ErrNoMatches    = errors.New("no matches found")
+	ErrInvalidMatch = errors.New("invalid match: empty session id or directory")
 )
 
 const (
@@ -44,12 +44,12 @@ func (r *Relinker) DBPath() string {
 	return r.dbPath
 }
 
-func (r *Relinker) open(ctx context.Context) (*sql.DB, error) {
+func (r *Relinker) open() (*sql.DB, error) {
 	return db.Open(r.dbPath)
 }
 
 func (r *Relinker) FindStaleSessions(ctx context.Context) ([]db.Session, error) {
-	handle, err := r.open(ctx)
+	handle, err := r.open()
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (r *Relinker) FindStaleSessions(ctx context.Context) ([]db.Session, error) 
 }
 
 func (r *Relinker) FindPhase1Matches(ctx context.Context) ([]Match, error) {
-	handle, err := r.open(ctx)
+	handle, err := r.open()
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (r *Relinker) FindPhase1Matches(ctx context.Context) ([]Match, error) {
 		return nil, err
 	}
 
-	var matches []Match
+	matches := make([]Match, 0, len(stale))
 	for _, s := range stale {
 		if s.ProjectID == "" {
 			continue
@@ -119,7 +119,7 @@ func (r *Relinker) ApplyAll(ctx context.Context, matches []Match) error {
 		return fmt.Errorf("backup before write: %w", err)
 	}
 
-	handle, err := r.open(ctx)
+	handle, err := r.open()
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (r *Relinker) ApplyAll(ctx context.Context, matches []Match) error {
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	stmt, err := tx.PrepareContext(ctx, `UPDATE session SET directory = ? WHERE id = ?`)
 	if err != nil {

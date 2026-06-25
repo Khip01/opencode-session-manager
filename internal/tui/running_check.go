@@ -33,7 +33,7 @@ func DetectRunningInstances() ([]RunningProcess, error) {
 		return nil, err
 	}
 
-	var matches []RunningProcess
+	matches := make([]RunningProcess, 0)
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
