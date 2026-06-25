@@ -20,7 +20,18 @@ readonly REPO="Khip01/opencode-session-manager"
 readonly BINARY="opencode-sm"
 readonly GITHUB_API="https://api.github.com"
 
-VERSION="${OPENCODE_SM_VERSION:-}"
+normalize_version() {
+    # Ensure version has 'v' prefix. raw.githubusercontent.com and
+    # github.com release URLs both require the v prefix; the API
+    # returns tags without it.
+    case "$1" in
+        v*) printf '%s\n' "$1" ;;
+        "") printf '%s\n' "" ;;
+        *)  printf 'v%s\n' "$1" ;;
+    esac
+}
+
+VERSION="$(normalize_version "${OPENCODE_SM_VERSION:-}")"
 INSTALL_DIR="${OPENCODE_SM_INSTALL_DIR:-}"
 LOCAL_FILE=""
 DRY_RUN=false
@@ -252,7 +263,7 @@ TMPDIR_GLOBAL=""
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --version)      VERSION="$2"; shift 2 ;;
+            --version)      VERSION="$(normalize_version "$2")"; shift 2 ;;
             --from-local)   LOCAL_FILE="$2"; shift 2 ;;
             --prefix)       INSTALL_DIR="$2"; shift 2 ;;
             --dry-run)      DRY_RUN=true; shift ;;
@@ -268,7 +279,9 @@ main() {
     detect_os_arch
 
     if [[ -z "$VERSION" && -z "$LOCAL_FILE" ]]; then
-        VERSION=$(resolve_latest_version)
+        local resolved
+        resolved=$(resolve_latest_version)
+        VERSION=$(normalize_version "$resolved")
     fi
     [[ -n "$VERSION" ]] || die "version is required"
 

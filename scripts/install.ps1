@@ -24,6 +24,14 @@ $Repo = "Khip01/opencode-session-manager"
 $Binary = "opencode-sm"
 $GitHubApi = "https://api.github.com"
 
+function Normalize-Version($v) {
+    if ([string]::IsNullOrEmpty($v)) { return "" }
+    if ($v.StartsWith("v")) { return $v }
+    return "v$v"
+}
+
+if ($Version) { $Version = Normalize-Version $Version }
+
 function Show-Help {
     @"
 opencode-sm installer (PowerShell)
@@ -228,7 +236,7 @@ Log "opencode-sm installer (Windows)"
 Log ""
 
 if (-not $Version -and -not $FromLocal) {
-    $Version = Resolve-LatestVersion
+    $Version = Normalize-Version (Resolve-LatestVersion)
 }
 if (-not $Version) { Die "version is required" }
 
