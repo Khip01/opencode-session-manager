@@ -211,6 +211,9 @@ func (m *model) handleListKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	case key.Matches(msg, m.keys.Watch):
 		return m, m.toggleWatch()
+	case key.Matches(msg, m.keys.Help):
+		m.help.ShowAll = !m.help.ShowAll
+		return m, nil
 	}
 
 	var cmd tea.Cmd

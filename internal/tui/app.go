@@ -307,7 +307,12 @@ func (m model) renderRightColumn(width, height int) string {
 }
 
 func (m model) renderHints(width, height int) string {
-	helpView := m.help.ShortHelpView(m.keys.listShortHelp())
+	var helpView string
+	if m.help.ShowAll {
+		helpView = m.help.FullHelpView(m.keys.listFullHelp())
+	} else {
+		helpView = m.help.ShortHelpView(m.keys.listShortHelp())
+	}
 	content := m.styles.subtle.Render(helpView)
 	return m.styles.detailPanel.
 		Width(width).
