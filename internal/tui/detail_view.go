@@ -5,35 +5,27 @@ import (
 	"strings"
 	"time"
 
-	"charm.land/bubbles/v2/viewport"
-
 	"github.com/Khip01/opencode-session-manager/internal/db"
 )
 
+// Chat preview display limits. Tuned for typical 120x40 terminals
+// where the right column is ~60 cols and the chat panel is ~25 rows.
+// 10 most recent messages total (mix of user and AI), 3 lines each.
+// When content overflows the viewport, user scrolls with mouse
+// wheel or arrow keys.
 const (
-	chatPreviewMaxMessages = 6
-	chatPreviewTextMaxLines = 6
+	chatPreviewMaxMessages       = 10
+	chatPreviewMaxLinesPerMessage = 3
 )
 
-func newDetail(width, height int) viewport.Model {
-	return viewport.New(viewport.WithWidth(width), viewport.WithHeight(height))
-}
-
-func renderDetail(s sessionItem, messages []db.Message, styles styles) string {
+// renderMetadataPanel returns the metadata text for the top-right
+// panel. No panel border is rendered here; the caller wraps with
+// the detailPanel style and sets Height.
+func renderMetadataPanel(s sessionItem, styles styles) string {
 	if (s == sessionItem{}) {
 		return styles.detailEmpty.Render("Select a session to see details.")
 	}
 
-	meta := renderMetadata(s, styles)
-	chat := renderChatPreview(messages, styles)
-
-	if chat == "" {
-		return meta
-	}
-	return meta + "\n\n" + chat
-}
-
-func renderMetadata(s sessionItem, styles styles) string {
 	var b strings.Builder
 	b.WriteString(styles.detailHeader.Render(s.session.Title))
 	b.WriteString("\n")
@@ -76,75 +68,108 @@ func renderMetadata(s sessionItem, styles styles) string {
 
 	b.WriteString(styles.detailLabel.Render("Updated:     "))
 	b.WriteString(formatTime(s.session.TimeUpdated))
-	b.WriteString("\n")
 
 	return b.String()
 }
 
-func renderChatPreview(messages []db.Message, styles styles) string {
+// renderChatViewportContent builds the text shown in the chat
+// preview viewport. It filters to messages with at least one text
+// part, shows the last N (most recent) with role labels, and
+// truncates each message body to a fixed number of lines so the
+// preview stays scannable. The returned string is meant to be fed
+// to viewport.SetContent; the caller wraps the viewport in a panel.
+func renderChatViewportContent(messages []db.Message, styles styles, width int) string {
 	if len(messages) == 0 {
-		return ""
+		return styles.detailEmpty.Render("No chat messages in this session.")
 	}
+
+	previewable := make([]db.Message, 0, len(messages))
+	for _, m := range messages {
+		if messageHasText(m) {
+			previewable = append(previewable, m)
+		}
+	}
+	if len(previewable) == 0 {
+		return styles.subtle.Render("No text content in this session (only tool calls or reasoning).")
+	}
+
+	limit := chatPreviewMaxMessages
+	if len(previewable) < limit {
+		limit = len(previewable)
+	}
+	preview := previewable[len(previewable)-limit:]
 
 	var b strings.Builder
 	b.WriteString(styles.detailHeader.Render("Chat Preview"))
-	b.WriteString("\n")
-
-	limit := chatPreviewMaxMessages
-	if len(messages) < limit {
-		limit = len(messages)
-	}
-	preview := messages[len(messages)-limit:]
+	b.WriteString("\n\n")
 
 	for i, m := range preview {
 		if i > 0 {
-			b.WriteString("\n")
+			b.WriteString("\n\n")
 		}
-		renderOneMessage(&b, m, styles)
+		renderOneChatMessage(&b, m, styles, width)
 	}
 
-	if len(messages) > chatPreviewMaxMessages {
-		b.WriteString("\n")
+	total := len(previewable)
+	if total > chatPreviewMaxMessages {
+		b.WriteString("\n\n")
 		b.WriteString(styles.subtle.Render(
-			fmt.Sprintf("... and %d earlier messages (use database tools to view all)",
-				len(messages)-chatPreviewMaxMessages)))
+			fmt.Sprintf("... and %d earlier messages", total-chatPreviewMaxMessages)))
 	}
-
 	return b.String()
 }
 
-func renderOneMessage(b *strings.Builder, m db.Message, styles styles) {
-	roleLabel := strings.ToUpper(m.Role)
-	if m.Role == "assistant" {
+func messageHasText(m db.Message) bool {
+	for _, p := range m.Parts {
+		if p.Type == "text" && p.Text != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func renderOneChatMessage(b *strings.Builder, m db.Message, styles styles, width int) {
+	var roleLabel string
+	switch m.Role {
+	case "assistant":
 		roleLabel = "ASSISTANT"
-	} else if m.Role == "user" {
+	case "user":
 		roleLabel = "USER"
+	default:
+		roleLabel = strings.ToUpper(m.Role)
 	}
 
 	var header string
-	if m.Role == "assistant" {
+	switch m.Role {
+	case "assistant":
 		header = styles.detailOK.Render(roleLabel)
-	} else if m.Role == "user" {
+	case "user":
 		header = styles.detailWarn.Render(roleLabel)
-	} else {
+	default:
 		header = styles.detailLabel.Render(roleLabel)
 	}
 	b.WriteString(header)
+	b.WriteString("\n")
 
+	textWidth := width - 4
+	if textWidth < 20 {
+		textWidth = 20
+	}
+	wrapStyle := styles.detailLabel.Width(textWidth)
+
+	indent := "  "
 	for _, p := range m.Parts {
 		if p.Type != "text" || p.Text == "" {
 			continue
 		}
-		b.WriteString("\n")
 		lines := strings.Split(p.Text, "\n")
-		max := chatPreviewTextMaxLines
+		max := chatPreviewMaxLinesPerMessage
 		if len(lines) > max {
 			lines = lines[:max]
-			lines = append(lines, fmt.Sprintf("... (%d more lines)", 0))
 		}
 		for _, ln := range lines {
-			b.WriteString("  ")
-			b.WriteString(ln)
+			b.WriteString(indent)
+			b.WriteString(wrapStyle.Render(ln))
 			b.WriteString("\n")
 		}
 	}

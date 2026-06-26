@@ -72,7 +72,7 @@ func insertSession(t *testing.T, dbPath, id, pid, dir, title string) {
 	require.NoError(t, err)
 }
 
-func openTestModel(t *testing.T, dbPath string) model {
+func openTestModel(t *testing.T, dbPath string) *model {
 	t.Helper()
 	handle, err := db.Open(dbPath)
 	require.NoError(t, err)

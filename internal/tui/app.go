@@ -1,3 +1,29 @@
+// Package tui implements the Bubble Tea-based interactive terminal UI
+// for opencode-sm.
+//
+// Layout (full terminal window):
+//
+//   +----------------------------------------------------+
+//   | header: version badge + DB path                    |  1 row
+//   +----------------------------------------------------+
+//   |                       |                            |
+//   |   LEFT COLUMN         |   RIGHT COLUMN             |
+//   |   (sessions + hints)  |   (meta + chat preview)    |
+//   |                       |                            |
+//   |   +---------------+   |   +--------------------+   |
+//   |   | sessions      |   |   | session metadata |   |  ~30% right col
+//   |   | list (80%)    |   |   | (top)            |   |
+//   |   |               |   |   +--------------------+   |
+//   |   +---------------+   |   | chat preview      |   |  ~70% right col
+//   |   | hints (20%)    |   |   | (scrollable)     |   |  (viewport)
+//   |   +---------------+   |   +--------------------+   |
+//   |                       |                            |
+//   +----------------------------------------------------+
+//
+// The chat preview panel uses a viewport so long messages can be
+// scrolled with mouse wheel or arrow keys. The hint panel at the
+// bottom-left replaces the old global footer so keybinding hints
+// are always visible without scrolling.
 package tui
 
 import (
@@ -8,11 +34,11 @@ import (
 	"github.com/Khip01/opencode-session-manager/internal/db"
 	"github.com/Khip01/opencode-session-manager/internal/relinker"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/bubbles/v2/filepicker"
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/list"
 	"charm.land/bubbles/v2/viewport"
-	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
 
@@ -46,6 +72,11 @@ func (t tabID) Label() string {
 	}
 }
 
+
+// Chat preview display limits are defined in detail_view.go where
+// the rendering helpers live.
+
+
 type model struct {
 	options  Options
 	styles   styles
@@ -59,10 +90,10 @@ type model struct {
 	orphans []sessionItem
 	active  []sessionItem
 
-	list   list.Model
-	detail viewport.Model
-	picker filepicker.Model
-	help   help.Model
+	list         list.Model
+	chatViewport viewport.Model
+	picker       filepicker.Model
+	help         help.Model
 
 	width    int
 	height   int
@@ -72,38 +103,50 @@ type model struct {
 	err      error
 	status   string
 
-	mode     modeID
-	modal    modalState
+	mode  modeID
+	modal modalState
+
+	// Mouse tracking for hover-based scroll routing. Updated on
+	// mouse-motion events; consumed when mouse-wheel events arrive to
+	// decide which panel should receive the scroll.
+	mouseX int
+	mouseY int
+
 	watching bool
 
 	chatMessages        []db.Message
 	chatLoadedSessionID string
 }
 
-func newModel(opts Options, handle *sql.DB) model {
+func newModel(opts Options, handle *sql.DB) *model {
 	km := defaultKeyMap()
 	l := newList(nil, 40, 20)
-	d := newDetail(40, 20)
+	cv := viewport.New(viewport.WithWidth(40), viewport.WithHeight(10))
 	fp := newDirPicker()
 	h := help.New()
 
-	return model{
-		options:  opts,
-		styles:   defaultStyles(),
-		keys:     km,
-		db:       handle,
-		loader:   newDataLoader(handle),
-		relinker: relinker.New(opts.DBPath),
-		tab:      tabOrphans,
-		list:     l,
-		detail:   d,
-		picker:   fp,
-		help:     h,
-		loading:  true,
-		status:   "loading…",
-		mode:     modeNone,
-		modal:    newModalState(),
-		watching: opts.Watch,
+	palette := opencodePalette()
+	h.Styles.ShortKey = lipgloss.NewStyle().Foreground(palette.accent)
+	h.Styles.ShortDesc = lipgloss.NewStyle().Foreground(palette.fg)
+	h.Styles.ShortSeparator = lipgloss.NewStyle().Foreground(palette.muted)
+
+	return &model{
+		options:     opts,
+		styles:      defaultStyles(),
+		keys:        km,
+		db:          handle,
+		loader:      newDataLoader(handle),
+		relinker:    relinker.New(opts.DBPath),
+		tab:         tabOrphans,
+		list:        l,
+		chatViewport: cv,
+		picker:      fp,
+		help:        h,
+		loading:     true,
+		status:      "loading…",
+		mode:        modeNone,
+		modal:       newModalState(),
+		watching:    opts.Watch,
 	}
 }
 
@@ -123,7 +166,7 @@ func loadSessionsCmd(loader *dataLoader) tea.Cmd {
 	}
 }
 
-func (m model) View() tea.View {
+func (m *model) View() tea.View {
 	if m.quitting {
 		return tea.NewView("Bye!")
 	}
@@ -145,6 +188,7 @@ func (m model) View() tea.View {
 
 	v := tea.NewView(base)
 	v.AltScreen = true
+	v.MouseMode = tea.MouseModeCellMotion
 	return v
 }
 
@@ -153,10 +197,8 @@ func (m model) renderBase() string {
 		return m.styles.subtle.Render("starting…")
 	}
 	header := m.renderHeader()
-	tabs := m.renderTabs()
 	body := m.renderBody()
-	footer := m.renderFooter()
-	return lipgloss.JoinVertical(lipgloss.Left, header, tabs, body, footer)
+	return lipgloss.JoinVertical(lipgloss.Left, header, body)
 }
 
 func (m model) overlayModal(base, content string) string {
@@ -187,9 +229,6 @@ func (m model) renderHeader() string {
 		return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
 	}
 
-	// Place left at the start and right at the far right of the
-	// terminal width, so the two are visually separated by the gap
-	// between them rather than crammed together.
 	rightPlaced := lipgloss.PlaceHorizontal(
 		m.width-lipgloss.Width(left)-2,
 		lipgloss.Right,
@@ -198,66 +237,83 @@ func (m model) renderHeader() string {
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, rightPlaced)
 }
 
-func (m model) renderTabs() string {
-	tabs := []tabID{tabOrphans, tabActive}
-	parts := make([]string, len(tabs))
-	for i, t := range tabs {
-		label := t.Label()
-		switch t {
-		case tabOrphans:
-			label += " (" + itoa(len(m.orphans)) + ")"
-		case tabActive:
-			label += " (" + itoa(len(m.active)) + ")"
-		}
-		if t == m.tab {
-			parts[i] = m.styles.tabActive.Render(" " + label + " ")
-		} else {
-			parts[i] = m.styles.tabInactive.Render(" " + label + " ")
-		}
-	}
-	return lipgloss.JoinHorizontal(lipgloss.Top, parts...)
-}
-
 func (m model) renderBody() string {
-	listWidth := m.width / 3
-	if listWidth < 28 {
-		listWidth = 28
+	if m.width <= 0 || m.height <= 1 {
+		return ""
 	}
-	detailWidth := m.width - listWidth - 4
-	if detailWidth < 28 {
-		detailWidth = 28
-	}
-	bodyHeight := m.height - 6
+
+	bodyHeight := m.height - 1 // minus header
 	if bodyHeight < 6 {
 		bodyHeight = 6
 	}
 
-	m.list.SetWidth(listWidth)
-	m.list.SetHeight(bodyHeight)
-	m.detail.SetWidth(detailWidth)
-	m.detail.SetHeight(bodyHeight)
+	leftWidth := m.width / 2
+	if leftWidth < 32 {
+		leftWidth = 32
+	}
+	rightWidth := m.width - leftWidth - 1
+	if rightWidth < 24 {
+		rightWidth = 24
+	}
 
-	left := m.styles.listPanel.
-		Width(listWidth).
-		Height(bodyHeight).
-		Render(m.list.View())
+	leftCol := m.renderLeftColumn(leftWidth, bodyHeight)
+	rightCol := m.renderRightColumn(rightWidth, bodyHeight)
 
-	right := m.styles.detailPanel.
-		Width(detailWidth).
-		Height(bodyHeight).
-		Render(m.detail.View())
-
-	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+	return lipgloss.JoinHorizontal(lipgloss.Top, leftCol, rightCol)
 }
 
-func (m model) renderFooter() string {
-	status := m.status
-	if status == "" {
-		status = m.styles.subtle.Render("ready: r=relink, m=manual, x=migrate, /=filter, q=quit")
+func (m model) renderLeftColumn(width, height int) string {
+	listHeight := int(float64(height) * 0.80)
+	hintsHeight := height - listHeight
+	if listHeight < 4 {
+		listHeight = height - 3
+		hintsHeight = 3
 	}
+
+	m.list.SetWidth(width - 2)
+	m.list.SetHeight(listHeight - 2)
+
+	listPanel := m.styles.listPanel.
+		Width(width).
+		Height(listHeight).
+		Render(m.list.View())
+
+	hintsPanel := m.renderHints(width, hintsHeight)
+
+	return lipgloss.JoinVertical(lipgloss.Left, listPanel, hintsPanel)
+}
+
+func (m model) renderRightColumn(width, height int) string {
+	metaHeight := int(float64(height) * 0.30)
+	chatHeight := height - metaHeight
+	if metaHeight < 5 {
+		metaHeight = 5
+		chatHeight = height - metaHeight
+	}
+
+	si, _ := selectedItem(m.list)
+	metaContent := renderMetadataPanel(si, m.styles)
+	metaPanel := m.styles.detailPanel.
+		Width(width).
+		Height(metaHeight).
+		Render(metaContent)
+
+	chatPanel := m.styles.detailPanel.
+		Width(width).
+		Height(chatHeight).
+		Render(m.chatViewport.View())
+
+	return lipgloss.JoinVertical(lipgloss.Left, metaPanel, chatPanel)
+}
+
+func (m model) renderHints(width, height int) string {
 	helpView := m.help.ShortHelpView(m.keys.listShortHelp())
-	bar := m.styles.helpBar.Width(m.width).Render(helpView)
-	return status + "\n" + bar
+	content := m.styles.subtle.Render(helpView)
+	return m.styles.detailPanel.
+		Width(width).
+		Height(height).
+		Padding(0, 1).
+		Render(content)
 }
 
 func (m *model) recomputeLayout() {
@@ -274,7 +330,8 @@ func Run(opts Options) error {
 	}
 	defer handle.Close()
 
-	p := tea.NewProgram(newModel(opts, handle))
+	m := newModel(opts, handle)
+	p := tea.NewProgram(m)
 	_, err = p.Run()
 	if err != nil && !errors.Is(err, tea.ErrProgramKilled) {
 		return err

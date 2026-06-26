@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"fmt"
+
 	"charm.land/bubbles/v2/list"
 )
 
@@ -10,16 +12,22 @@ func newList(items []sessionItem, width, height int) list.Model {
 
 	l := list.New(toItemList(items), delegate, width, height)
 	l.Title = "Sessions"
-	l.SetShowTitle(false)
+	l.SetShowTitle(true)
 	l.SetShowStatusBar(true)
-	l.SetShowFilter(true)
-	l.SetFilteringEnabled(true)
+	l.SetShowFilter(false)
+	l.SetFilteringEnabled(false)
 	l.SetShowHelp(false)
 	l.SetStatusBarItemName("session", "sessions")
 
 	if len(items) == 0 {
 		l.Select(0)
 	}
+	return l
+}
+
+func setListTabTitle(l list.Model, tab tabID, orphanCount, activeCount int) list.Model {
+	title := fmt.Sprintf(" Sessions: %s  (orphans=%d  active=%d) ", tab.Label(), orphanCount, activeCount)
+	l.Title = title
 	return l
 }
 
