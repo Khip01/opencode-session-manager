@@ -94,7 +94,7 @@ opencode-sm uninstall --purge      # Remove config and data too
 ### Keybindings
 
 | Key | Mode | Action |
-|---|---|---|---|
+|---|---|---|
 | `j`/`k`, `↑`/`↓` | List | Navigate sessions |
 | `tab`/`→`, `shift+tab`/`←` | List | Switch tab |
 | `r` | List | Open relink modal |
