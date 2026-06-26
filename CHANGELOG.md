@@ -119,7 +119,6 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 - Phase 1 (project_id) auto-recovery for renamed git repos.
 - Manual path remap with directory picker.
 - Cross-project migrate (N most recent sessions).
-- Live list filter (`/`).
 - Watch mode for auto-refresh when opencode.db changes (`w`).
 - Running-instance detection with optional SIGTERM.
 - Auto-backup before every write (`<db>.opencode-sm-backup`).

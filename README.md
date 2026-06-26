@@ -29,7 +29,6 @@ not yet ship.
 - Detail preview for any selected session: status, path, agent, timestamps
 - Scrollable chat preview (recent messages) in the detail pane
 - Toggle between orphans/active via tab, shift+tab, left/right arrows
-- Live list filter via `/` key
 - Watch mode (`w`) for auto-refresh when opencode.db changes
 - OpenCode-inspired dark theme (Lipgloss)
 
@@ -98,7 +97,6 @@ opencode-sm uninstall --purge      # Remove config and data too
 | `tab`/`→`, `shift+tab`/`←` | List | Switch tab |
 | `r` | List | Open relink modal |
 | `m` | List | Quick manual remap |
-| `/` | List | Live filter sessions |
 | `w` | List | Toggle watch mode (auto-refresh) |
 | `?` | List | Show help |
 | `q` | Any | Quit |
