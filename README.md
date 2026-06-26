@@ -9,7 +9,7 @@ history is still safe in the local SQLite database.
 
 ## Version
 
-**0.1.0-alpha.3** — pre-release. The feature set is functional but not yet
+**0.1.0-alpha.4** — pre-release. The feature set is functional but not yet
 production-stable. Expect breaking schema changes until 1.0.0.
 
 ## Why
@@ -24,14 +24,16 @@ not yet ship.
 
 ## Features
 
-### Session Browser (Milestone 3)
+### Session Browser
 - Browse all sessions in one place, split into Orphans and Active tabs
 - Detail preview for any selected session: status, path, agent, timestamps
+- Scrollable chat preview (recent messages) in the detail pane
 - Toggle between orphans/active via tab, shift+tab, left/right arrows
-- Fuzzy filter via the list component built-in filtering
+- Live list filter via `/` key
+- Watch mode (`w`) for auto-refresh when opencode.db changes
 - OpenCode-inspired dark theme (Lipgloss)
 
-### Relink Flow (Milestone 4)
+### Relink Flow
 - Press `r` on any orphan session to open the relink modal
 - **Phase 1 (auto, project_id)** — automatically matches orphan sessions
   to their new path when the git root commit hash is still valid
@@ -41,12 +43,22 @@ not yet ship.
 - Running OpenCode instance detection (Linux) with warning and optional
   SIGTERM kill before destructive writes
 
-### Core Engine (Milestones 1-2)
-- SQLite layer: list/find/get/update sessions and projects
+### Cross-Project Migration
+- Migrate N most recent sessions from one project to another
+- Updates both `session.directory` and `session.project_id`
+
+### Core Engine
+- SQLite layer: list/find/get/update sessions, projects, and messages
 - Phase 1 matching algorithm (adapted from bbl21's Python implementation)
 - Manual path remap with preview
 - Auto-backup (`<dbpath>.opencode-sm-backup`) before any write operation
 - Transactional writes and error-safe rollback
+
+### Install & Uninstall
+- Cross-platform install scripts (bash + PowerShell)
+- Self-uninstall via `opencode-sm uninstall` subcommand
+- Shell completions for bash, zsh, fish, powershell
+- GitHub Actions CI matrix across Ubuntu, macOS, Windows
 
 ## Installation
 
@@ -72,14 +84,22 @@ opencode-sm --version                   # Print version and exit
 opencode-sm --help                      # Print help
 ```
 
+```sh
+opencode-sm uninstall --dry-run    # Preview files to remove
+opencode-sm uninstall --prefix ~/.local/bin  # Custom prefix
+opencode-sm uninstall --purge      # Remove config and data too
+```
+
 ### Keybindings
 
 | Key | Mode | Action |
-|---|---|---|
+|---|---|---|---|
 | `j`/`k`, `↑`/`↓` | List | Navigate sessions |
 | `tab`/`→`, `shift+tab`/`←` | List | Switch tab |
 | `r` | List | Open relink modal |
 | `m` | List | Quick manual remap |
+| `/` | List | Live filter sessions |
+| `w` | List | Toggle watch mode (auto-refresh) |
 | `?` | List | Show help |
 | `q` | Any | Quit |
 | `esc` | Modal | Cancel / go back |
@@ -90,30 +110,32 @@ opencode-sm --help                      # Print help
 
 ```
 cmd/opencode-sm/main.go          — CLI entry, flags, version
-internal/
-  db/                            — SQLite queries + helpers
-    types.go                     — Session, Project structs
-    session.go                   — ListSessions, GetSession, UpdateSessionDirectory
-    project.go                   — ListProjects, BuildWorktreeIndex
-  relinker/                      — Core matching algorithm
-    relinker.go                  — Phase 1 (project_id match), ApplyAll
-    manual.go                    — Manual path remap, preview
-    backup.go                    — Backup before write
-  tui/                           — Bubble Tea TUI
-    app.go                       — Root model, Init, View, Run
-    data.go                      — Session loader (orphan/active split)
-    keys.go                      — Keybindings
-    update.go                    — Update + modal dispatch
-    modal.go                     — Modal state machine
-    relink_modal.go              — Relink flow (Phase 1 / Manual)
-    filepicker_modal.go          — Directory picker
-    confirm_modal.go             — Yes/no + result dialogs
-    running_check.go             — Linux process detection
-    process.go                   — SIGTERM kill
-    list_view.go                 — Bubbles list wrapper
-    detail_view.go               — Viewport detail pane
-    styles.go                    — Lipgloss theme (OpenCode palette)
-    util.go                      — Helpers
+   internal/
+     db/                            — SQLite queries + helpers
+       types.go                     — Session, Project, Message structs
+       session.go                   — ListSessions, GetSession, UpdateSessionDirectory
+       project.go                   — ListProjects, BuildWorktreeIndex
+       messages.go                  — ListMessages, MessagePart types
+     relinker/                      — Core matching algorithm
+       relinker.go                  — Phase 1 (project_id match), ApplyAll
+       manual.go                    — Manual path remap, preview
+       backup.go                    — Backup before write
+     tui/                           — Bubble Tea TUI
+       app.go                       — Root model, Init, View, Run
+       data.go                      — Session loader (orphan/active split)
+       keys.go                      — Keybindings
+       update.go                    — Update + modal dispatch
+       modal.go                     — Modal state machine
+       relink_modal.go              — Relink flow (Phase 1 / Manual)
+       apply.go                     — Apply pending relink
+       filepicker_modal.go          — Directory picker
+       confirm_modal.go             — Yes/no + result dialogs
+       running_check.go             — Linux process detection
+       process.go                   — SIGTERM kill
+       list_view.go                 — Bubbles list wrapper
+       detail_view.go               — Viewport detail pane
+       styles.go                    — Lipgloss theme (OpenCode palette)
+       util.go                      — Helpers
 ```
 
 ## Credits & Inspiration
