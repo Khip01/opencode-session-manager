@@ -7,6 +7,22 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.1.0-alpha.4] - 2026-06-26
+
+### Fixed
+- Release install URLs in published body now have correct `v`
+  prefix. Goreleaser's `{{ .Version }}` template renders the tag
+  without the leading `v` (e.g. `0.1.0-alpha.3`), but
+  `raw.githubusercontent.com` and `go install` URLs require it.
+  `.goreleaser.yml` now uses `{{ .Tag }}` for raw URLs so they
+  render as `v0.1.0-alpha.3` correctly. Also added a
+  `normalize_version` helper in both install scripts so users
+  who pass `--version 0.1.0-alpha.3` (without `v`) get the
+  correct download URL after normalization.
+- Existing `v0.1.0-alpha.3` release body on GitHub edited
+  retroactively via `gh release edit` so users copying install
+  commands from that release page get working URLs.
+
 ## [0.1.0-alpha.3] - 2026-06-26
 
 ### Fixed

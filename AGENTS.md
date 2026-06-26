@@ -247,6 +247,16 @@ See CHANGELOG.md for full details.
 - **`runtime.GOOS != "linux"`**: returning `nil` from a
   `[]T`-returning function breaks callers that assert
   `NotNil(t, slice)`. Return `make([]T, 0)` instead.
+- **Goreleaser `{{ .Version }}` strips `v`**: in `.goreleaser.yml`
+  URLs that go to GitHub raw (e.g. `raw.githubusercontent.com/.../{{ .Version }}/...`)
+  or `go install ...@{{ .Version }}`, use `{{ .Tag }}` instead.
+  `.Version` renders the tag without the leading `v` prefix
+  (e.g. `0.1.0-alpha.3`), but GitHub raw URLs and `go install`
+  require it. `.Tag` renders with the prefix (`v0.1.0-alpha.3`).
+  Display-only fields (release title, tag name) are fine either
+  way. For install scripts that take a version string from the
+  user, normalize it explicitly: add `v` if missing before
+  building any URL.
 - **Cross-platform path tests**: don't hardcode `/tmp/...`.
   Use `filepath.Join(os.TempDir(), ...)` or `t.TempDir()`.
 
