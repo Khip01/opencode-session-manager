@@ -128,8 +128,9 @@ func defaultStyles() styles {
 			Padding(1, 2),
 
 		helpBar: lipgloss.NewStyle().
-			Foreground(p.muted).
+			Foreground(p.fg).
 			Background(p.panel).
+			Bold(true).
 			Padding(0, 1),
 
 		modalBox: lipgloss.NewStyle().

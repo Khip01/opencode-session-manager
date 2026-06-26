@@ -114,3 +114,9 @@ func truncate(s string, n int) string {
 	}
 	return s[:n-1] + "…"
 }
+
+// LoadMessages returns up to `limit` recent messages for a session,
+// with their parts attached, suitable for the chat preview pane.
+func (d *dataLoader) LoadMessages(ctx context.Context, sessionID string, limit int) ([]db.Message, error) {
+	return db.ListMessages(ctx, d.handle, sessionID, limit)
+}

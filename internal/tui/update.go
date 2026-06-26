@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"context"
+
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 )
@@ -226,9 +228,25 @@ func (m *model) refreshDetail() {
 	si, ok := selectedItem(m.list)
 	if !ok {
 		m.detail.SetContent(m.styles.detailEmpty.Render("Select a session to see details."))
+		m.chatMessages = nil
+		m.chatLoadedSessionID = ""
 		return
 	}
-	m.detail.SetContent(renderDetail(si, m.styles))
+
+	// Load chat messages if we have not loaded them for this
+	// session yet. Sync is fine here because typical preview
+	// payloads are small (a few dozen messages at most).
+	if m.chatLoadedSessionID != si.session.ID {
+		ctx := context.Background()
+		msgs, err := m.loader.LoadMessages(ctx, si.session.ID, 0)
+		if err != nil {
+			msgs = nil
+		}
+		m.chatMessages = msgs
+		m.chatLoadedSessionID = si.session.ID
+	}
+
+	m.detail.SetContent(renderDetail(si, m.chatMessages, m.styles))
 }
 
 func (m model) applyLoaded(msg sessionsLoadedMsg) model {

@@ -1,24 +1,42 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	"charm.land/bubbles/v2/viewport"
+
+	"github.com/Khip01/opencode-session-manager/internal/db"
+)
+
+const (
+	chatPreviewMaxMessages = 6
+	chatPreviewTextMaxLines = 6
 )
 
 func newDetail(width, height int) viewport.Model {
 	return viewport.New(viewport.WithWidth(width), viewport.WithHeight(height))
 }
 
-func renderDetail(s sessionItem, styles styles) string {
+func renderDetail(s sessionItem, messages []db.Message, styles styles) string {
 	if (s == sessionItem{}) {
 		return styles.detailEmpty.Render("Select a session to see details.")
 	}
 
+	meta := renderMetadata(s, styles)
+	chat := renderChatPreview(messages, styles)
+
+	if chat == "" {
+		return meta
+	}
+	return meta + "\n\n" + chat
+}
+
+func renderMetadata(s sessionItem, styles styles) string {
 	var b strings.Builder
 	b.WriteString(styles.detailHeader.Render(s.session.Title))
-	b.WriteString("\n\n")
+	b.WriteString("\n")
 
 	b.WriteString(styles.detailLabel.Render("ID:          "))
 	b.WriteString(s.session.ID)
@@ -60,14 +78,76 @@ func renderDetail(s sessionItem, styles styles) string {
 	b.WriteString(formatTime(s.session.TimeUpdated))
 	b.WriteString("\n")
 
-	if s.kind == itemKindOrphan {
+	return b.String()
+}
+
+func renderChatPreview(messages []db.Message, styles styles) string {
+	if len(messages) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+	b.WriteString(styles.detailHeader.Render("Chat Preview"))
+	b.WriteString("\n")
+
+	limit := chatPreviewMaxMessages
+	if len(messages) < limit {
+		limit = len(messages)
+	}
+	preview := messages[len(messages)-limit:]
+
+	for i, m := range preview {
+		if i > 0 {
+			b.WriteString("\n")
+		}
+		renderOneMessage(&b, m, styles)
+	}
+
+	if len(messages) > chatPreviewMaxMessages {
 		b.WriteString("\n")
-		b.WriteString(styles.detailHint.Render(
-			"Tip: use Phase 1 (project_id match) or manual remap to restore this session.",
-		))
+		b.WriteString(styles.subtle.Render(
+			fmt.Sprintf("... and %d earlier messages (use database tools to view all)",
+				len(messages)-chatPreviewMaxMessages)))
 	}
 
 	return b.String()
+}
+
+func renderOneMessage(b *strings.Builder, m db.Message, styles styles) {
+	roleLabel := strings.ToUpper(m.Role)
+	if m.Role == "assistant" {
+		roleLabel = "ASSISTANT"
+	} else if m.Role == "user" {
+		roleLabel = "USER"
+	}
+
+	var header string
+	if m.Role == "assistant" {
+		header = styles.detailOK.Render(roleLabel)
+	} else if m.Role == "user" {
+		header = styles.detailWarn.Render(roleLabel)
+	} else {
+		header = styles.detailLabel.Render(roleLabel)
+	}
+	b.WriteString(header)
+
+	for _, p := range m.Parts {
+		if p.Type != "text" || p.Text == "" {
+			continue
+		}
+		b.WriteString("\n")
+		lines := strings.Split(p.Text, "\n")
+		max := chatPreviewTextMaxLines
+		if len(lines) > max {
+			lines = lines[:max]
+			lines = append(lines, fmt.Sprintf("... (%d more lines)", 0))
+		}
+		for _, ln := range lines {
+			b.WriteString("  ")
+			b.WriteString(ln)
+			b.WriteString("\n")
+		}
+	}
 }
 
 func orDash(s string) string {

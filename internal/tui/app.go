@@ -75,6 +75,9 @@ type model struct {
 	mode     modeID
 	modal    modalState
 	watching bool
+
+	chatMessages        []db.Message
+	chatLoadedSessionID string
 }
 
 func newModel(opts Options, handle *sql.DB) model {
@@ -176,10 +179,23 @@ func (m model) renderHeader() string {
 	left := m.styles.header.Render(" opencode-sm " + m.options.Version + " ")
 	watch := ""
 	if m.watching {
-		watch = m.styles.statusOK.Render(" ● watching")
+		watch = m.styles.statusOK.Render(" watching")
 	}
 	right := m.styles.subtle.Render("DB: "+m.options.DBPath) + watch
-	return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+
+	if m.width <= 0 {
+		return lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+	}
+
+	// Place left at the start and right at the far right of the
+	// terminal width, so the two are visually separated by the gap
+	// between them rather than crammed together.
+	rightPlaced := lipgloss.PlaceHorizontal(
+		m.width-lipgloss.Width(left)-2,
+		lipgloss.Right,
+		right,
+	)
+	return lipgloss.JoinHorizontal(lipgloss.Top, left, rightPlaced)
 }
 
 func (m model) renderTabs() string {

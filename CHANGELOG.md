@@ -7,6 +7,25 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+- Chat preview in the detail panel. When a session is selected, the
+  bottom of the right panel shows the most recent messages (up to 6)
+  with role labels (USER / ASSISTANT) and text content. Backed by a
+  new `internal/db/messages.go` package with `Message`, `MessagePart`
+  types and a `ListMessages` query that joins `message` and `part`
+  tables and parses the JSON `data` columns with a tiny
+  `jsonStringField` helper (no extra dependency).
+
+### Fixed
+- Header layout had version string and DB path jammed together with
+  no gap because `lipgloss.JoinHorizontal` just concatenates. Now
+  the right side (`DB:` plus watching indicator) is placed at the
+  far right of the terminal width via `lipgloss.PlaceHorizontal`,
+  leaving a visible gap between the version badge and the path.
+- Status / help bar at the bottom of the TUI was using muted text on
+  panel background and was too easy to miss. Now uses foreground
+  text with `Bold(true)` so the keybinding hints are clearly visible.
+
 ## [0.1.0-alpha.4] - 2026-06-26
 
 ### Fixed
