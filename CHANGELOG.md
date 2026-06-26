@@ -5,6 +5,55 @@ in this file. Versions follow [Semantic Versioning](https://semver.org/).
 
 Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+- **Markdown renderer** (`internal/tui/markdown.go`): bold `**`, italic `*`,
+  inline code `` ` ``, fenced code blocks, links, headings, lists,
+  blockquotes. Used for chat preview instead of raw text.
+- **Scrollbar** on the right side of the chat preview panel (`internal/tui/scrollbar.go`).
+  Shows scroll position with blue thumb (`▌`) and gray track (`│`).
+- **Fixed "Chat Preview" header** — stays at the top of the panel while
+  chat content scrolls beneath it.
+- **Layout responsive to terminal height** — fixed 7-row hints panel,
+  remaining space distributed between list, metadata, and chat.
+- **Watch mode removed** — `--watch` flag, `watch.go`, and all associated
+  code deleted (was non-functional).
+
+### Changed
+- **Layout rebuilt from scratch** using `lipgloss.Place` + `WithWhitespaceStyle`
+  approach, matching the reference `test-tui-multiple-window-go`. Panels no
+  longer extend past the terminal bottom.
+- **Left/right column alignment fixed** — both columns now have identical
+  total height, no more mismatched panel bottoms.
+- **List height set in Update path** (pointer receiver) instead of View
+  path, fixing responsive resize behavior.
+- **Chat preview**: messages no longer truncated (unlimited lines).
+  Literal `\n` and `\"` escape sequences unescaped.
+- **User messages**: left-only double blue border with subtle `#1e1e1e`
+  background, full panel width. AI messages plain without extra padding.
+- **Panel backgrounds simplified** — all panels use terminal default
+  background (no explicit Background set). User messages retain `#1e1e1e`.
+- **Hints panel** uses `ShortHelpView` (compact) instead of `FullHelpView`.
+- **Detail panel padding** reduced from `Padding(1,2)` to `PaddingTop(1)
+  + PaddingBottom(1) + PaddingLeft(2)` so the scrollbar touches the
+  right border.
+- **`?`/`/` help key** removed (full keymap always visible in hints panel).
+
+### Fixed
+- **Alt-screen break on modal open**: all modal views now set
+  `v.AltScreen = true` via `tuiView()` helper, so `r`/`m`/`x` keybindings
+  no longer cause the terminal to exit fixed viewport mode.
+- **Chat scroll not working**: `SetContent`/`GotoBottom` moved from
+  View path (value receiver) to Update path (pointer receiver).
+- **Responsive resize**: `m.list.SetWidth/SetHeight` moved from `renderBody`
+  (value receiver) to `handleWindowSize` (Update path, pointer receiver).
+- **Panel right/bottom borders invisible**: panels now use exact height
+  calculation (`availH = m.height - 1`) with proper border accounting,
+  so bottom and right borders are fully visible.
+- **Indentation removed**: no more leading spaces in markdown paragraph
+  rendering or assistant message padding.
+
 ## [0.1.0-alpha.4] - 2026-06-26
 
 ### Added

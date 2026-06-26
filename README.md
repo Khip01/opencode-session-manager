@@ -27,9 +27,11 @@ not yet ship.
 ### Session Browser
 - Browse all sessions in one place, split into Orphans and Active tabs
 - Detail preview for any selected session: status, path, agent, timestamps
-- Scrollable chat preview (recent messages) in the detail pane
+- Scrollable chat preview with markdown rendering (bold, italic, code,
+  lists, headings, blockquotes) and scrollbar indicator
+- Fixed "Chat Preview" header (doesn't scroll away)
 - Toggle between orphans/active via tab, shift+tab, left/right arrows
-- Watch mode (`w`) for auto-refresh when opencode.db changes
+- Live filter via list component
 - OpenCode-inspired dark theme (Lipgloss)
 
 ### Relink Flow
@@ -97,8 +99,7 @@ opencode-sm uninstall --purge      # Remove config and data too
 | `tab`/`→`, `shift+tab`/`←` | List | Switch tab |
 | `r` | List | Open relink modal |
 | `m` | List | Quick manual remap |
-| `w` | List | Toggle watch mode (auto-refresh) |
-| `?` | List | Show help |
+| `x` | List | Migrate to project |
 | `q` | Any | Quit |
 | `esc` | Modal | Cancel / go back |
 | `y`, `enter` | Modal | Confirm |
@@ -131,7 +132,9 @@ cmd/opencode-sm/main.go          — CLI entry, flags, version
        running_check.go             — Linux process detection
        process.go                   — SIGTERM kill
        list_view.go                 — Bubbles list wrapper
-       detail_view.go               — Viewport detail pane
+       detail_view.go               — Metadata + chat preview rendering
+       markdown.go                  — Lightweight markdown renderer
+       scrollbar.go                 — Scrollbar for chat preview
        styles.go                    — Lipgloss theme (OpenCode palette)
        util.go                      — Helpers
 ```

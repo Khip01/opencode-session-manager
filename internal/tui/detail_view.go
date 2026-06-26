@@ -6,17 +6,21 @@ import (
 	"time"
 
 	"github.com/Khip01/opencode-session-manager/internal/db"
+	"charm.land/lipgloss/v2"
 )
 
 // Chat preview display limits. Tuned for typical 120x40 terminals
 // where the right column is ~60 cols and the chat panel is ~25 rows.
-// 10 most recent messages total (mix of user and AI), 3 lines each.
+// 10 most recent messages total (mix of user and AI), 20 lines each
+// (markdown rendering may expand content).
 // When content overflows the viewport, user scrolls with mouse
 // wheel or arrow keys.
 const (
 	chatPreviewMaxMessages       = 10
-	chatPreviewMaxLinesPerMessage = 3
+	chatPreviewMaxLinesPerMessage = 20
 )
+
+
 
 // renderMetadataPanel returns the metadata text for the top-right
 // panel. No panel border is rendered here; the caller wraps with
@@ -100,21 +104,19 @@ func renderChatViewportContent(messages []db.Message, styles styles, width int) 
 	preview := previewable[len(previewable)-limit:]
 
 	var b strings.Builder
-	b.WriteString(styles.detailHeader.Render("Chat Preview"))
-	b.WriteString("\n\n")
+	total := len(previewable)
+	if total > chatPreviewMaxMessages {
+		b.WriteString(styles.subtle.Render(
+			fmt.Sprintf("... and %d earlier messages\n", total-chatPreviewMaxMessages)))
+		b.WriteString(strings.Repeat("─", width-6))
+		b.WriteString("\n\n")
+	}
 
 	for i, m := range preview {
 		if i > 0 {
 			b.WriteString("\n\n")
 		}
 		renderOneChatMessage(&b, m, styles, width)
-	}
-
-	total := len(previewable)
-	if total > chatPreviewMaxMessages {
-		b.WriteString("\n\n")
-		b.WriteString(styles.subtle.Render(
-			fmt.Sprintf("... and %d earlier messages", total-chatPreviewMaxMessages)))
 	}
 	return b.String()
 }
@@ -128,50 +130,49 @@ func messageHasText(m db.Message) bool {
 	return false
 }
 
+
+
 func renderOneChatMessage(b *strings.Builder, m db.Message, styles styles, width int) {
-	var roleLabel string
-	switch m.Role {
-	case "assistant":
-		roleLabel = "ASSISTANT"
-	case "user":
-		roleLabel = "USER"
-	default:
-		roleLabel = strings.ToUpper(m.Role)
-	}
-
-	var header string
-	switch m.Role {
-	case "assistant":
-		header = styles.detailOK.Render(roleLabel)
-	case "user":
-		header = styles.detailWarn.Render(roleLabel)
-	default:
-		header = styles.detailLabel.Render(roleLabel)
-	}
-	b.WriteString(header)
-	b.WriteString("\n")
-
-	textWidth := width - 4
-	if textWidth < 20 {
-		textWidth = 20
-	}
-	wrapStyle := styles.detailLabel.Width(textWidth)
-
-	indent := "  "
+	var mdText string
 	for _, p := range m.Parts {
-		if p.Type != "text" || p.Text == "" {
-			continue
+		if p.Type == "text" && p.Text != "" {
+			mdText += p.Text + " "
 		}
-		lines := strings.Split(p.Text, "\n")
-		max := chatPreviewMaxLinesPerMessage
-		if len(lines) > max {
-			lines = lines[:max]
+	}
+	if mdText == "" {
+		return
+	}
+
+	mdText = strings.ReplaceAll(mdText, "\\n", "\n")
+	mdText = strings.ReplaceAll(mdText, "\\\"", "\"")
+	mdText = strings.ReplaceAll(mdText, "\\\\", "\\")
+	mdText = strings.TrimSpace(mdText)
+
+	renderWidth := width - 8
+	if renderWidth < 20 {
+		renderWidth = 20
+	}
+
+	rendered := renderMarkdown(mdText, renderWidth)
+	wrapped := lipgloss.Wrap(rendered, renderWidth, "")
+
+	switch m.Role {
+	case "user":
+		fw := width - 3
+		if fw < 10 {
+			fw = 10
 		}
-		for _, ln := range lines {
-			b.WriteString(indent)
-			b.WriteString(wrapStyle.Render(ln))
-			b.WriteString("\n")
-		}
+		userStyle := lipgloss.NewStyle().
+			Border(lipgloss.DoubleBorder(), false, false, false, true).
+			BorderForeground(lipgloss.Color("#5c9cf5")).
+			Background(lipgloss.Color("#1e1e1e")).
+			Width(fw).
+			Padding(1, 2, 1, 1)
+		b.WriteString(userStyle.Render(wrapped))
+		b.WriteString("\n")
+	default:
+		b.WriteString(wrapped)
+		b.WriteString("\n")
 	}
 }
 

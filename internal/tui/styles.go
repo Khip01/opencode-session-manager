@@ -29,28 +29,49 @@ type styles struct {
 }
 
 type palette struct {
-	bg     color.Color
-	fg     color.Color
-	muted  color.Color
-	accent color.Color
-	green  color.Color
-	red    color.Color
-	yellow color.Color
-	panel  color.Color
-	border color.Color
+	bg        color.Color
+	fg        color.Color
+	muted     color.Color
+	accent    color.Color
+	secondary color.Color
+	warm      color.Color
+	green     color.Color
+	red       color.Color
+	orange    color.Color
+	cyan      color.Color
+	panel     color.Color
+	border    color.Color
 }
 
 func opencodePalette() palette {
+	colors := map[string]string{
+		"bg":        "#0a0a0a",
+		"panel":     "#141414",
+		"element":   "#1e1e1e",
+		"fg":        "#eeeeee",
+		"muted":     "#808080",
+		"border":    "#484848",
+		"accent":    "#5c9cf5",
+		"secondary": "#9d7cd8",
+		"warm":      "#fab283",
+		"green":     "#7fd88f",
+		"red":       "#e06c75",
+		"orange":    "#f5a742",
+		"cyan":      "#56b6c2",
+	}
 	return palette{
-		bg:     lipgloss.Color("#0d1117"),
-		fg:     lipgloss.Color("#e6edf3"),
-		muted:  lipgloss.Color("#7d8590"),
-		accent: lipgloss.Color("#1f6feb"),
-		green:  lipgloss.Color("#3fb950"),
-		red:    lipgloss.Color("#f85149"),
-		yellow: lipgloss.Color("#d29922"),
-		panel:  lipgloss.Color("#161b22"),
-		border: lipgloss.Color("#30363d"),
+		bg:        lipgloss.Color(colors["bg"]),
+		fg:        lipgloss.Color(colors["fg"]),
+		muted:     lipgloss.Color(colors["muted"]),
+		accent:    lipgloss.Color(colors["accent"]),
+		secondary: lipgloss.Color(colors["secondary"]),
+		warm:      lipgloss.Color(colors["warm"]),
+		green:     lipgloss.Color(colors["green"]),
+		red:       lipgloss.Color(colors["red"]),
+		orange:    lipgloss.Color(colors["orange"]),
+		cyan:      lipgloss.Color(colors["cyan"]),
+		panel:     lipgloss.Color(colors["panel"]),
+		border:    lipgloss.Color(colors["border"]),
 	}
 }
 
@@ -87,11 +108,7 @@ func defaultStyles() styles {
 			Foreground(p.green),
 
 		statusWarn: lipgloss.NewStyle().
-			Foreground(p.yellow),
-
-		statusErr: lipgloss.NewStyle().
-			Foreground(p.red).
-			Bold(true),
+			Foreground(p.orange),
 
 		detailLabel: lipgloss.NewStyle().
 			Foreground(p.muted).
@@ -103,7 +120,7 @@ func defaultStyles() styles {
 			MarginBottom(1),
 
 		detailHint: lipgloss.NewStyle().
-			Foreground(p.yellow).
+			Foreground(p.orange).
 			Italic(true),
 
 		detailEmpty: lipgloss.NewStyle().
@@ -129,7 +146,6 @@ func defaultStyles() styles {
 
 		helpBar: lipgloss.NewStyle().
 			Foreground(p.fg).
-			Background(p.panel).
 			Bold(true).
 			Padding(0, 1),
 

@@ -36,8 +36,7 @@ func main() {
 
 	var (
 		dbPath    = flag.String("db-path", "", "Path to opencode.db (default: ~/.local/share/opencode/opencode.db)")
-		watch     = flag.Bool("watch", false, "Auto-refresh session list when opencode.db changes")
-		showVer   = flag.Bool("version", false, "Print version and exit")
+	showVer   = flag.Bool("version", false, "Print version and exit")
 		showHelp  = flag.Bool("help", false, "Show help")
 		uninstall = flag.Bool("uninstall", false, "Remove the opencode-sm binary from standard install locations")
 		prefix    = flag.String("prefix", "", "With --uninstall: remove the binary from DIR instead of scanning standard locations")
@@ -98,7 +97,6 @@ func main() {
 	if err := tui.Run(tui.Options{
 		DBPath:  resolved,
 		Version: version,
-		Watch:   *watch,
 	}); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)

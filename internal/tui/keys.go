@@ -18,7 +18,6 @@ type keyMap struct {
 	Migrate key.Binding
 	Cancel  key.Binding
 	Enter   key.Binding
-	Watch   key.Binding
 
 	// Chat preview scroll keys. These do not conflict with the
 	// list navigation bindings above (Up/Down) because Up/Down
@@ -65,10 +64,7 @@ func defaultKeyMap() keyMap {
 			key.WithKeys("ctrl+c"),
 			key.WithHelp("ctrl+c", "force quit"),
 		),
-		Help: key.NewBinding(
-			key.WithKeys("?"),
-			key.WithHelp("?", "help"),
-		),
+	Help: key.NewBinding(key.WithDisabled()),
 		Relink: key.NewBinding(
 			key.WithKeys("r"),
 			key.WithHelp("r", "relink selected"),
@@ -88,10 +84,6 @@ func defaultKeyMap() keyMap {
 		Enter: key.NewBinding(
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "confirm"),
-		),
-		Watch: key.NewBinding(
-			key.WithKeys("w"),
-			key.WithHelp("w", "watch db"),
 		),
 		ChatUp: key.NewBinding(
 			key.WithKeys("pgup"),
@@ -138,8 +130,7 @@ func (k keyMap) listFullHelp() [][]key.Binding {
 		{k.NextTab, k.PrevTab},
 		{k.ChatUp, k.ChatDown, k.ChatTop, k.ChatBottom},
 		{k.Relink, k.Manual, k.Migrate},
-		{k.Watch},
-		{k.Help, k.Quit, k.ForceQuit},
+		{k.Quit, k.ForceQuit},
 	}
 }
 

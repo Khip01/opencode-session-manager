@@ -15,14 +15,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case sessionsLoadedMsg:
 		m = m.applyLoaded(msg)
-		if m.watching {
-			return m, watchTick()
-		}
 		return m, nil
-
-	case watchTickMsg:
-		cmd := m.handleWatchTick()
-		return m, cmd
 
 	case tea.MouseMsg:
 		// Track cursor position and forward the event through the
@@ -207,13 +200,7 @@ func (m *model) handleListKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, m.keys.Migrate):
 		if _, ok := selectedItem(m.list); ok {
 			m.openMigrateFlow()
-			return m, nil
 		}
-	case key.Matches(msg, m.keys.Watch):
-		return m, m.toggleWatch()
-	case key.Matches(msg, m.keys.Help):
-		m.help.ShowAll = !m.help.ShowAll
-		return m, nil
 	}
 
 	var cmd tea.Cmd
@@ -304,6 +291,18 @@ func (m *model) handleResultKey(_ tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 func (m *model) handleWindowSize(msg tea.WindowSizeMsg) *model {
 	m.width = msg.Width
 	m.height = msg.Height
+
+	availH := m.height - 1
+	leftBotH := 7
+	leftTopH := availH - leftBotH
+	if leftTopH < 6 {
+		leftTopH = 6
+		leftBotH = availH - leftTopH
+	}
+	lw := m.width / 2
+	m.list.SetWidth(lw - 4)
+	m.list.SetHeight(leftTopH - 4)
+
 	m.recomputeLayout()
 	m.syncViewportContent()
 	return m
@@ -331,17 +330,18 @@ func (m *model) syncViewportContent() {
 		rightWidth = 24
 	}
 
-	metaHeight := int(float64(bodyHeight) * 0.30)
+	metaHeight := int(float64(bodyHeight) * 0.40)
 	chatHeight := bodyHeight - metaHeight
-	if metaHeight < 5 {
-		metaHeight = 5
+	if metaHeight < 8 {
+		metaHeight = 8
 		chatHeight = bodyHeight - metaHeight
 	}
 
-	m.chatViewport.SetWidth(rightWidth - 2)
-	m.chatViewport.SetHeight(chatHeight - 2)
-	chatContent := renderChatViewportContent(m.chatMessages, m.styles, rightWidth-4)
+	m.chatViewport.SetWidth(rightWidth - 4)
+	m.chatViewport.SetHeight(chatHeight - 5)
+	chatContent := renderChatViewportContent(m.chatMessages, m.styles, rightWidth-6)
 	m.chatViewport.SetContent(chatContent)
+	m.chatViewport.GotoBottom()
 }
 
 func (m *model) switchTab(delta int) {
