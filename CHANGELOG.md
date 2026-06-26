@@ -7,6 +7,88 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+- **Layout restructured to a 2x2 grid.** The previous layout had a
+  single left/right split with metadata and chat stacked inside one
+  tall right panel, plus a global footer at the bottom for help
+  hints. The new layout uses four bordered panels: top-left is the
+  session list (80% of left column height), bottom-left is the
+  keybinding hints (20%), top-right is session metadata (30% of
+  right column height), bottom-right is the scrollable chat
+  preview (70%). The global footer is gone; the hints panel
+  replaces it so shortcuts are always visible without competing
+  with chat for vertical space.
+- **Chat preview is now scrollable.** The bottom-right panel wraps
+  a Bubble Tea `viewport.Model`, so long chat histories can be
+  scrolled with mouse wheel or arrow keys. Previously long lines
+  overflowed horizontally and were clipped by the panel border.
+
+### Fixed
+- Terminal never received mouse events at all, so the chat preview
+  scroll-by-hover-routing logic never had any input to route. The
+  previous build relied on Bubble Tea v2's default behaviour of
+  asking the terminal to send mouse reports, which v2 only does when
+  the View's MouseMode is set explicitly (v1 returned
+  `tea.EnableMouseCellMotion` from Init; v2 has no such Cmd and the
+  View must set MouseMode itself). Fix: set
+  `v.MouseMode = tea.MouseModeCellMotion` on the base View returned
+  by the TUI so the runtime emits `CSI ?1006h` and the terminal
+  starts sending click, release, and wheel events.
+- Chat preview PageUp / PageDown / Home / End keys were defined
+  but did not scroll the chat viewport. Two compounding bugs:
+  (a) the keybinding strings used the literal words `pagedown` /
+  `pageup` but Bubble Tea v2 renders the KeyPgDown / KeyPgUp codes
+  as `pgdown` / `pgup`, so `key.Matches` returned false and the
+  cases never fired; (b) `handleListKey` had a value receiver, so
+  even when the cases fired the viewport mutations happened on a
+  throwaway copy of the model. Fix: rename bindings to `pgdown` /
+  `pgup` and switch the receiver to `*model`. Test coverage added
+  in `internal/tui/chat_scroll_test.go` asserts YOffset actually
+  changes after each handled key.
+- Help bar at the bottom of the TUI was invisible because the help
+  text used default styles (dark-key #626262, dark-desc #4A4A4A)
+  on a dark background (#161b22 panel). Overridden in `newModel`
+  to use accent (blue) for key names and foreground (off-white)
+  for descriptions, with muted separator. The keybinding hints are
+  now clearly readable on any terminal with a dark palette.
+- `-db-path` (and any other string flag) given without a value now
+  prints a clean focused error message instead of Go's noisy
+  `flag needs an argument: -db-path` plus a full usage dump. Pre-
+  scan of `os.Args` in `detectMissingValue` catches the common
+  `-flag` mistake before `flag.Parse` runs.
+- Chat preview now skips messages that have no text parts (e.g.
+  tool calls, step boundaries, reasoning-only). Previously these
+  rendered as bare role labels with no content, which looked like
+  empty rows in the panel.
+- Chat preview text now wraps to fit the detail panel width via
+  `lipgloss.Width`. Previously long lines would overflow the panel
+  horizontally and the viewport would clip them on the right.
+- Body height reserved for the footer increased from `m.height - 6`
+  to `m.height - 8` so the help bar is never clipped on terminals
+  whose height happens to land exactly on the threshold.
+- Chat preview limit is now 10 most recent messages (was 6) and
+  3 lines per message (was 6), so users see more of the recent
+  conversation without losing the scannable summary feel.
+- **Value receiver bug (critical fix).** The entire chat-scroll
+  fix chain described above was technically correct at the unit
+  test level but **never worked in the interactive TUI** because
+  `View(m model)` and several helper methods (`updateMouseFromMsg`,
+  `forwardToComponents`, `applyLoaded`) used value receivers. Any
+  mutation to the chat viewport inside View was silently discarded
+  because View only operates on a value-receiver copy. Additionally,
+  `updateMouseFromMsg(msg tea.MouseMsg)` stored mouse coordinates
+  on a throwaway copy and `forwardToComponents` returned only a
+  Cmd, discarding model state changes. Fix: change `View` and all
+  Update-path helpers to `*model` pointer receivers; introduce
+  `syncViewportContent` (called from `handleWindowSize` and
+  `refreshDetail`) to mutate the viewport in the Update path where
+  the pointer lives; remove all `SetWidth`/`SetHeight`/`SetContent`
+  calls from `renderRightColumn` (View function) so the viewport
+  is only written from Update, not read from a copy.
+  Identified with help from Gemini 3.1 Pro analysis.
+
+## [0.1.0-alpha.4] - 2026-06-26
+
 ### Added
 - Chat preview in the detail panel. When a session is selected, the
   bottom of the right panel shows the most recent messages (up to 6)

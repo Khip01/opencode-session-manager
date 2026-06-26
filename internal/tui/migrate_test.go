@@ -15,7 +15,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func setupMigrateModalFixture(t *testing.T) (dbPath, srcDir, dstDir string, m model) {
+func setupMigrateModalFixture(t *testing.T) (dbPath, srcDir, dstDir string, m *model) {
 	t.Helper()
 	tmp := t.TempDir()
 	dbPath = filepath.Join(tmp, "opencode.db")
