@@ -87,6 +87,76 @@ func TestRenderBody_ChatPreviewPanelPresent(t *testing.T) {
 		"chat preview header must be present in the rendered body")
 }
 
+// TestRenderBody_FitsAvailableHeight verifies that the rendered body
+// occupies exactly the available body height (terminal height minus
+// the one-row header). Before this fix the body was 18 rows taller
+// than availH because the panel helpers applied MaxHeight to the
+// content BEFORE applying Width, so long lines (such as help-view
+// rows) were wrapped to multiple rows AFTER the height clip and
+// then the Height(h) constraint could no longer shrink them back.
+// The fix wraps content to the inner width first, then clips to the
+// inner height, so Width-driven line wrapping happens before the
+// height check counts rows.
+func TestRenderBody_FitsAvailableHeight(t *testing.T) {
+	cases := []struct {
+		name   string
+		width  int
+		height int
+	}{
+		{"wide_terminal", 160, 40},
+		{"default", 120, 40},
+		{"narrow", 80, 30},
+		{"tall", 120, 60},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := newRenderTestModel(tc.width, tc.height)
+			body := m.renderBody()
+
+			availH := tc.height - 1
+			assert.Equal(t, availH, lipgloss.Height(body),
+				"renderBody must produce exactly availH=%d rows for %dx%d terminal",
+				availH, tc.width, tc.height)
+		})
+	}
+}
+
+// TestMakePanelPad_HonorsHeight verifies that makePanelPad produces
+// output of exactly the requested height for a long-line content
+// (simulating help view rows that exceed the panel width). Before
+// the fix, MaxHeight was applied before Width, so wrapping expanded
+// the panel past the requested height.
+func TestMakePanelPad_HonorsHeight(t *testing.T) {
+	content := "row1 very long line that will be wrapped to multiple rows when constrained\n" +
+		"row2 another very long line that wraps when constrained\n" +
+		"row3 yet another very long line that wraps when constrained\n" +
+		"row4 final very long line that wraps when constrained"
+
+	for _, h := range []int{5, 7, 10, 15, 20} {
+		out := makePanelPad(60, h, "#484848", "#0a0a0a", content)
+		assert.Equal(t, h, lipgloss.Height(out),
+			"makePanelPad must produce exactly h=%d rows, got %d",
+			h, lipgloss.Height(out))
+	}
+}
+
+// TestMakePanelChat_HonorsHeight verifies the same for makePanelChat.
+func TestMakePanelChat_HonorsHeight(t *testing.T) {
+	content := "line one very long content that wraps when constrained\n" +
+		"line two very long content that wraps when constrained\n" +
+		"line three very long content that wraps when constrained\n" +
+		"line four very long content that wraps when constrained\n" +
+		"line five very long content that wraps when constrained"
+
+	for _, h := range []int{10, 15, 20, 24, 30} {
+		out := makePanelChat(60, h, "#484848", "#0a0a0a", content)
+		assert.Equal(t, h, lipgloss.Height(out),
+			"makePanelChat must produce exactly h=%d rows, got %d",
+			h, lipgloss.Height(out))
+	}
+}
+
 // stripANSI removes ANSI CSI escape sequences from a string so tests
 // can assert on visible text without color codes. Handles the form
 // ESC [ ... letter that lipgloss v2 emits.

@@ -160,7 +160,8 @@ func makePanel(w, h int, borderColor string, _ string, content string) string {
 }
 
 func makePanelChat(w, h int, borderColor string, _ string, content string) string {
-	clipped := lipgloss.NewStyle().MaxHeight(h - 4).Render(content)
+	wrapped := lipgloss.NewStyle().Width(w - 4).Render(content)
+	clipped := lipgloss.NewStyle().MaxHeight(h - 4).Render(wrapped)
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color(borderColor)).
@@ -173,7 +174,8 @@ func makePanelChat(w, h int, borderColor string, _ string, content string) strin
 }
 
 func makePanelPad(w, h int, borderColor string, _ string, content string) string {
-	clipped := lipgloss.NewStyle().MaxHeight(h - 4).Render(content)
+	wrapped := lipgloss.NewStyle().Width(w - 6).Render(content)
+	clipped := lipgloss.NewStyle().MaxHeight(h - 4).Render(wrapped)
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color(borderColor)).
