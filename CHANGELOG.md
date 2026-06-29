@@ -5,6 +5,30 @@ in this file. Versions follow [Semantic Versioning](https://semver.org/).
 
 Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.1.0-alpha.5] - 2026-06-29
+
+### Fixed
+- **Bottom-right chat panel rendering at height 0** (the "mendelep"
+  panel bug). `renderBody` passed the zero-valued `m.rightBotH`
+  model field to `makePanelChat` instead of the locally computed
+  `rightBotH` variable. The field is never assigned anywhere in
+  the codebase, so the chat panel was always rendered at height 0
+  and the right column appeared shorter than the left column.
+  Fix: use the local `rightBotH` variable. Added regression test
+  `TestRenderBody_DoesNotReadRightBotHField` in
+  `internal/tui/render_body_test.go`.
+- **Panel helpers ignored long-line wrapping** when content was
+  taller than its container. `makePanelPad` and `makePanelChat`
+  applied `MaxHeight` to the raw content before wrapping it to the
+  panel's inner width, so any line wider than the panel was wrapped
+  to multiple rows AFTER the height clip and the resulting block no
+  longer fit inside `Height(h)`. The body ended up overflowing the
+  terminal by 18 rows on a 120x40 terminal. Fix: wrap content to
+  the inner content width first, then clip to the inner content
+  height. Added regression tests `TestRenderBody_FitsAvailableHeight`,
+  `TestMakePanelPad_HonorsHeight`, and `TestMakePanelChat_HonorsHeight`
+  in `internal/tui/render_body_test.go`.
+
 ## [0.1.0-alpha.4] - 2026-06-26
 
 ### Added
@@ -93,26 +117,6 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 - Install scripts now prefer user-local writable PATH dirs
   (`~/.local/bin`, `~/go/bin`, `~/bin`) before falling back to
   system dirs, fixing `Permission denied` for non-root users.
-- **Bottom-right chat panel rendering at height 0** (the "mendelep"
-  panel bug). `renderBody` passed the zero-valued `m.rightBotH`
-  model field to `makePanelChat` instead of the locally computed
-  `rightBotH` variable. The field is never assigned anywhere in
-  the codebase, so the chat panel was always rendered at height 0
-  and the right column appeared shorter than the left column.
-  Fix: use the local `rightBotH` variable. Added regression test
-  `TestRenderBody_DoesNotReadRightBotHField` in
-  `internal/tui/render_body_test.go`.
-- **Panel helpers ignored long-line wrapping** when content was
-  taller than its container. `makePanelPad` and `makePanelChat`
-  applied `MaxHeight` to the raw content before wrapping it to the
-  panel's inner width, so any line wider than the panel was wrapped
-  to multiple rows AFTER the height clip and the resulting block no
-  longer fit inside `Height(h)`. The body ended up overflowing the
-  terminal by 18 rows on a 120x40 terminal. Fix: wrap content to
-  the inner content width first, then clip to the inner content
-  height. Added regression tests `TestRenderBody_FitsAvailableHeight`,
-  `TestMakePanelPad_HonorsHeight`, and `TestMakePanelChat_HonorsHeight`
-  in `internal/tui/render_body_test.go`.
 
 ## [0.1.0-alpha.3] - 2026-06-26
 

@@ -121,5 +121,10 @@ release:
 
     Both fallback scripts delegate to `opencode-sm uninstall` when the
     binary is available on `PATH`.
+
+    ## Changelog
+
+    See [CHANGELOG.md](https://github.com/Khip01/opencode-session-manager/blob/main/CHANGELOG.md)
+    for all changes in this release.
   footer: |
     **Full Changelog**: https://github.com/Khip01/opencode-session-manager/compare/{{ .PreviousTag }}...{{ .Tag }}
