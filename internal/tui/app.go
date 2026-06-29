@@ -223,7 +223,7 @@ func (m model) renderBody() string {
 	chatScrollV := lipgloss.JoinHorizontal(lipgloss.Top, chatVp, scrollbar)
 	chatTitle := m.styles.detailHeader.Render("Chat Preview")
 	chatBody := chatTitle + "\n" + chatScrollV
-	rightBot := makePanelChat(contentW, m.rightBotH, bc, bg, chatBody)
+	rightBot := makePanelChat(contentW, rightBotH, bc, bg, chatBody)
 
 	leftCol := lipgloss.JoinVertical(lipgloss.Top, leftTop, leftBot)
 	rightCol := lipgloss.JoinVertical(lipgloss.Top, rightTop, rightBot)

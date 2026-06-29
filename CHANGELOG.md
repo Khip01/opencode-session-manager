@@ -93,6 +93,15 @@ Format adapted from [Keep a Changelog](https://keepachangelog.com/).
 - Install scripts now prefer user-local writable PATH dirs
   (`~/.local/bin`, `~/go/bin`, `~/bin`) before falling back to
   system dirs, fixing `Permission denied` for non-root users.
+- **Bottom-right chat panel rendering at height 0** (the "mendelep"
+  panel bug). `renderBody` passed the zero-valued `m.rightBotH`
+  model field to `makePanelChat` instead of the locally computed
+  `rightBotH` variable. The field is never assigned anywhere in
+  the codebase, so the chat panel was always rendered at height 0
+  and the right column appeared shorter than the left column.
+  Fix: use the local `rightBotH` variable. Added regression test
+  `TestRenderBody_DoesNotReadRightBotHField` in
+  `internal/tui/render_body_test.go`.
 
 ## [0.1.0-alpha.3] - 2026-06-26
 

@@ -18,7 +18,7 @@ import (
 	"github.com/Khip01/opencode-session-manager/internal/tui"
 )
 
-const defaultVersion = "0.1.0-alpha.3"
+const defaultVersion = "0.1.0-alpha.4"
 
 var version = defaultVersion
 
